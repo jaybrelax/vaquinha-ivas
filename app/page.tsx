@@ -85,6 +85,8 @@ export default function Home() {
   const [activeReceiptUrl, setActiveReceiptUrl] = useState<string | null>(null);
   const [activeReceiptDonorId, setActiveReceiptDonorId] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const addButtonRef = useRef<HTMLDivElement>(null);
+  const [isAddButtonVisible, setIsAddButtonVisible] = useState<boolean>(true);
 
   const loadLocalDonations = () => {
     const savedDonors = localStorage.getItem('campaign_donors');
@@ -259,6 +261,18 @@ export default function Home() {
       localStorage.setItem('campaign_goal', goal.toString());
     }
   }, [goal, isClient]);
+
+  // Show FAB when main add button scrolls out of view
+  useEffect(() => {
+    const el = addButtonRef.current;
+    if (!el) return;
+    const observer = new IntersectionObserver(
+      ([entry]) => setIsAddButtonVisible(entry.isIntersecting),
+      { threshold: 0.1 }
+    );
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, [isClient]);
 
   const totalRaised = donors.reduce((acc, curr) => acc + curr.amount, 0);
   const progressPercent = goal > 0 ? Math.min((totalRaised / goal) * 100, 100) : 0;
@@ -744,7 +758,7 @@ export default function Home() {
         </section>
 
         {/* BTN ACCORDION: TO RE-ARRANGE BUTTON DIRECTLY ABOVE HISTORY LIST */}
-        <div id="action-trigger-area" className="mb-4 hidden sm:block">
+        <div id="action-trigger-area" ref={addButtonRef} className="mb-4">
           <button
             type="button"
             onClick={() => setIsFormOpen(!isFormOpen)}
@@ -1239,15 +1253,19 @@ export default function Home() {
         )}
       </AnimatePresence>
 
-      {/* FLOATING ACTION BUTTON — Mobile only */}
-      <button
-        type="button"
-        onClick={() => setIsFormOpen(true)}
-        className="sm:hidden fixed bottom-6 right-5 z-40 w-18 h-18 rounded-full bg-indigo-600 text-white shadow-2xl shadow-indigo-600/40 flex items-center justify-center hover:bg-indigo-700 active:scale-95 transition-all duration-200" style={{width: '4.5rem', height: '4.5rem'}}
-        aria-label="Registrar nova doação"
-      >
-        <Plus className="w-8 h-8 stroke-[2.5]" />
-      </button>
+      {/* SMART FAB — appears only when main button is scrolled out of view */}
+      {!isAddButtonVisible && (
+        <button
+          type="button"
+          onClick={() => setIsFormOpen(true)}
+          className="fixed bottom-6 right-5 z-40 rounded-full bg-indigo-600 text-white shadow-2xl shadow-indigo-600/40 flex items-center justify-center hover:bg-indigo-700 active:scale-95 transition-all duration-200"
+          style={{ width: '4rem', height: '4rem' }}
+          aria-label="Registrar nova doação"
+        >
+          <Plus className="w-7 h-7 stroke-[2.5]" />
+        </button>
+      )}
+
     </div>
   );
 }
