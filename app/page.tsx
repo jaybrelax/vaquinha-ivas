@@ -27,7 +27,8 @@ import {
   ChevronDown,
   ChevronUp,
   Settings,
-  Sliders
+  Sliders,
+  Copy
 } from 'lucide-react';
 import { getSupabase } from '@/lib/supabase';
 import { motion, AnimatePresence } from 'motion/react';
@@ -53,6 +54,10 @@ export default function Home() {
   const [title, setTitle] = useState<string>('Vaquinha do Microfone');
   const [description, setDescription] = useState<string>('Ajude-nos a adquirir o novo microfone Hollyland Lark A1 e eleve a qualidade dos áudios.');
   const [imageUrl, setImageUrl] = useState<string>('/lark-microphone.jpg');
+  const [pixKey, setPixKey] = useState<string>('');
+  const [pixHolder, setPixHolder] = useState<string>('');
+  const [pixBank, setPixBank] = useState<string>('');
+  const [isCopied, setIsCopied] = useState<boolean>(false);
   const [name, setName] = useState<string>('');
   const [amountStr, setAmountStr] = useState<string>('');
   const [search, setSearch] = useState<string>('');
@@ -67,6 +72,7 @@ export default function Home() {
   const [receiptPreview, setReceiptPreview] = useState<string | null>(null);
   const [isUploading, setIsUploading] = useState<boolean>(false);
   const [isDragOver, setIsDragOver] = useState<boolean>(false);
+  const [isSearchOpen, setIsSearchOpen] = useState<boolean>(false);
   
   // Supabase states
   const [isSupabase, setIsSupabase] = useState<boolean>(false);
@@ -103,6 +109,13 @@ export default function Home() {
     if (savedTitle) setTitle(savedTitle);
     if (savedDesc) setDescription(savedDesc);
     if (savedImageUrl) setImageUrl(savedImageUrl);
+
+    const savedPixKey = localStorage.getItem('campaign_pix_key');
+    if (savedPixKey) setPixKey(savedPixKey);
+    const savedPixHolder = localStorage.getItem('campaign_pix_holder');
+    if (savedPixHolder) setPixHolder(savedPixHolder);
+    const savedPixBank = localStorage.getItem('campaign_pix_bank');
+    if (savedPixBank) setPixBank(savedPixBank);
   };
 
   const fetchSupabaseDonations = async () => {
@@ -146,6 +159,9 @@ export default function Home() {
         setDescription(configData.description || 'Ajude-nos a adquirir o novo microfone Hollyland Lark A1 e eleve a qualidade dos áudios.');
         setGoal(parseFloat(configData.goal) || 500);
         setImageUrl(configData.image_url || '/lark-microphone.jpg');
+        setPixKey(configData.pix_key || '');
+        setPixHolder(configData.pix_holder || '');
+        setPixBank(configData.pix_bank || '');
       } else {
         if (configError && configError.message && (configError.message.includes('campaign_config') || configError.message.includes('schema cache'))) {
           throw configError;
@@ -162,6 +178,13 @@ export default function Home() {
         if (savedDesc) setDescription(savedDesc);
         const savedImageUrl = localStorage.getItem('campaign_image_url');
         if (savedImageUrl) setImageUrl(savedImageUrl);
+
+        const savedPixKey = localStorage.getItem('campaign_pix_key');
+        if (savedPixKey) setPixKey(savedPixKey);
+        const savedPixHolder = localStorage.getItem('campaign_pix_holder');
+        if (savedPixHolder) setPixHolder(savedPixHolder);
+        const savedPixBank = localStorage.getItem('campaign_pix_bank');
+        if (savedPixBank) setPixBank(savedPixBank);
       }
     } catch (err: any) {
       console.error('Supabase fetch error details:', err);
@@ -192,11 +215,34 @@ export default function Home() {
     if (supabase) {
       setIsSupabase(true);
       fetchSupabaseDonations();
+
+      // Subscribe to real-time changes on the donations table
+      const channel = supabase
+        .channel('realtime_donations')
+        .on(
+          'postgres_changes',
+          { event: 'INSERT', schema: 'public', table: 'donations' },
+          (payload) => {
+            console.log('New donation received via realtime:', payload);
+            // Append the new donation to the start of the list
+            setDonors((currentDonors) => {
+              // Ensure we don't duplicate if we already have it locally
+              if (currentDonors.some(d => d.id === payload.new.id)) return currentDonors;
+              return [payload.new as Donor, ...currentDonors];
+            });
+          }
+        )
+        .subscribe();
+
+      return () => {
+        supabase.removeChannel(channel);
+      };
     } else {
       setIsSupabase(false);
       setIsLoadingDb(false);
       loadLocalDonations();
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   // Sync Local Fallback changes to localStorage
@@ -481,15 +527,7 @@ export default function Home() {
       {/* CORE CONTAINER */}
       <main className="relative max-w-xl mx-auto px-4 pt-8">
         
-        {/* HEADER BRAND & CONNECTIONS STATUS */}
-        <header className="flex flex-col items-center text-center mb-6">
-          <h1 className="text-3xl font-extrabold tracking-tight text-slate-900 md:text-4xl leading-tight">
-            {title}
-          </h1>
-          <p className="mt-2 text-sm text-slate-400 max-w-sm leading-relaxed">
-            {description}
-          </p>
-        </header>
+        {/* HEADER BRAND REMOVED AS REQUESTED */}
 
         {/* DATABASE TABLE MISSING ALERT */}
         <AnimatePresence>
@@ -616,13 +654,12 @@ export default function Home() {
               className="absolute inset-0 w-full h-full object-cover select-none transition-transform duration-700 group-hover:scale-105"
             />
             <div className="absolute top-3 right-3 z-20">
-              <span className="inline-flex items-center gap-1.5 px-3 py-1 bg-black/60 shadow-lg backdrop-blur-md rounded-full text-xs font-medium text-white border border-white/10">
+              <span className="inline-flex items-center gap-1.5 px-3 py-1 bg-indigo-600 shadow-lg backdrop-blur-md rounded-full text-xs font-medium text-white border border-indigo-400/30">
                 <Mic className="w-3 h-3 text-indigo-400" />
                 Campanha Ativa
               </span>
             </div>
             <div className="absolute bottom-4 left-4 right-4 z-20 text-white">
-              <span className="text-indigo-400 text-xs font-bold uppercase tracking-wider">Objetivo de Arrecadação</span>
               <h2 className="text-lg font-bold mt-0.5 tracking-tight line-clamp-1">{title}</h2>
               <p className="text-xs text-white/80 line-clamp-2 mt-0.5 font-light">
                 {description}
@@ -675,12 +712,37 @@ export default function Home() {
               </div>
             </div>
 
+            {/* PIX AREA */}
+            {pixKey && (
+              <div className="mt-6 pt-5 border-t border-slate-100 flex flex-col items-center">
+                <button
+                  onClick={() => {
+                    navigator.clipboard.writeText(pixKey);
+                    setIsCopied(true);
+                    setTimeout(() => setIsCopied(false), 2000);
+                  }}
+                  className={`flex items-center gap-2 px-5 py-2.5 rounded-xl font-bold transition-all ${
+                    isCopied
+                      ? 'bg-emerald-600 text-white border border-emerald-700/20 shadow-md shadow-emerald-600/20'
+                      : 'bg-emerald-50 hover:bg-emerald-100 text-emerald-700 border border-emerald-200/60'
+                  }`}
+                >
+                  {isCopied ? <CheckCircle className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
+                  {isCopied ? 'Chave copiada! ✅' : 'Copiar chave Pix'}
+                </button>
+                <div className="text-center mt-3">
+                  {pixHolder && <p className="text-[11px] font-bold text-slate-600 uppercase tracking-wide">{pixHolder}</p>}
+                  {pixBank && <p className="text-[10px] font-medium text-slate-400">{pixBank}</p>}
+                </div>
+              </div>
+            )}
+
 
           </div>
         </section>
 
         {/* BTN ACCORDION: TO RE-ARRANGE BUTTON DIRECTLY ABOVE HISTORY LIST */}
-        <div id="action-trigger-area" className="mb-4">
+        <div id="action-trigger-area" className="mb-4 hidden sm:block">
           <button
             type="button"
             onClick={() => setIsFormOpen(!isFormOpen)}
@@ -917,7 +979,7 @@ export default function Home() {
         {/* DONORS HISTORY HEADER & LIST CARD */}
         <section id="donors-list" className="bg-white border border-slate-100 rounded-3xl overflow-hidden shadow-sm">
           <div className="p-6 border-b border-slate-100">
-            <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between mb-4">
+            <div className="flex items-center justify-between mb-0">
               <div className="flex items-center gap-2">
                 <div className="w-8 h-8 rounded-xl bg-slate-50 border border-slate-100 text-slate-500 flex items-center justify-center">
                   <Users className="w-4 h-4 text-indigo-500" />
@@ -931,31 +993,38 @@ export default function Home() {
                   </p>
                 </div>
               </div>
-              
-              {donors.length > 0 && (
-                <button
-                  type="button"
-                  onClick={handleResetCampaign}
-                  className="text-slate-400 hover:text-rose-500 text-xs font-semibold flex items-center gap-1 transition-colors self-end sm:self-auto cursor-pointer"
-                >
-                  Limpar Histórico
-                </button>
-              )}
+
+              {/* SEARCH TOGGLE ICON */}
+              <button
+                type="button"
+                onClick={() => { setIsSearchOpen(!isSearchOpen); setSearch(''); }}
+                className={`p-2 rounded-xl transition-all ${
+                  isSearchOpen
+                    ? 'bg-indigo-50 text-indigo-600'
+                    : 'text-slate-400 hover:bg-slate-50 hover:text-slate-600'
+                }`}
+                title="Buscar doador"
+              >
+                <Search className="w-4 h-4" />
+              </button>
             </div>
 
-            {/* SEARCH */}
-            <div className="relative">
-              <span className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none">
-                <Search className="w-4 h-4 text-slate-400" />
-              </span>
-              <input 
-                type="text"
-                placeholder="Buscar doador por nome..."
-                value={search}
-                onChange={(e) => setSearch(e.target.value)}
-                className="w-full pl-10 pr-4 py-2 rounded-xl border border-slate-100 bg-slate-50 text-xs focus:outline-none focus:ring-2 focus:ring-indigo-500/10 focus:border-indigo-400 transition-all placeholder:text-slate-400"
-              />
-            </div>
+            {/* COLLAPSIBLE SEARCH INPUT */}
+            {isSearchOpen && (
+              <div className="relative mt-3">
+                <span className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none">
+                  <Search className="w-4 h-4 text-slate-400" />
+                </span>
+                <input 
+                  type="text"
+                  autoFocus
+                  placeholder="Buscar doador por nome..."
+                  value={search}
+                  onChange={(e) => setSearch(e.target.value)}
+                  className="w-full pl-10 pr-4 py-2 rounded-xl border border-slate-100 bg-slate-50 text-xs focus:outline-none focus:ring-2 focus:ring-indigo-500/10 focus:border-indigo-400 transition-all placeholder:text-slate-400"
+                />
+              </div>
+            )}
           </div>
 
           {/* LIST BOX */}
@@ -977,7 +1046,7 @@ export default function Home() {
                     </div>
                     <div>
                       <div className="flex items-center gap-1.5">
-                        <h4 className="text-sm font-semibold text-slate-800 line-clamp-1 font-sans">
+                        <h4 className="text-base font-extrabold text-slate-900 line-clamp-1 uppercase tracking-wide">
                           {donor.name}
                         </h4>
                         
@@ -1113,7 +1182,7 @@ export default function Home() {
               <HelpCircle className="w-3.5 h-3.5 text-slate-400/80" />
               Ao configurar o Supabase, os dados sincronizam instantaneamente na nuvem.
             </p>
-            <p>© 2026 Campanha Hollyland Lark A1 • Desenvolvido para Vercel & Supabase.</p>
+            <p>© 2026 Campanha Hollyland Lark A1 • Desenvolvido por Jay Lax Dev.</p>
           </div>
         </footer>
 
@@ -1192,6 +1261,16 @@ export default function Home() {
           </motion.div>
         )}
       </AnimatePresence>
+
+      {/* FLOATING ACTION BUTTON — Mobile only */}
+      <button
+        type="button"
+        onClick={() => setIsFormOpen(true)}
+        className="sm:hidden fixed bottom-6 right-5 z-40 w-18 h-18 rounded-full bg-indigo-600 text-white shadow-2xl shadow-indigo-600/40 flex items-center justify-center hover:bg-indigo-700 active:scale-95 transition-all duration-200" style={{width: '4.5rem', height: '4.5rem'}}
+        aria-label="Registrar nova doação"
+      >
+        <Plus className="w-8 h-8 stroke-[2.5]" />
+      </button>
     </div>
   );
 }

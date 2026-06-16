@@ -28,6 +28,9 @@ export default function Admin() {
   const [description, setDescription] = useState<string>('Ajude-nos a adquirir o novo microfone Hollyland Lark A1 e eleve a qualidade dos áudios.');
   const [goalStr, setGoalStr] = useState<string>('500');
   const [imageUrl, setImageUrl] = useState<string>('/lark-microphone.jpg');
+  const [pixKey, setPixKey] = useState<string>('');
+  const [pixHolder, setPixHolder] = useState<string>('');
+  const [pixBank, setPixBank] = useState<string>('');
   
   // Storage bucket upload state
   const [coverFile, setCoverFile] = useState<File | null>(null);
@@ -48,11 +51,17 @@ export default function Admin() {
     const savedDesc = localStorage.getItem('campaign_description');
     const savedGoal = localStorage.getItem('campaign_goal');
     const savedImageUrl = localStorage.getItem('campaign_image_url');
+    const savedPixKey = localStorage.getItem('campaign_pix_key');
+    const savedPixHolder = localStorage.getItem('campaign_pix_holder');
+    const savedPixBank = localStorage.getItem('campaign_pix_bank');
 
     if (savedTitle) setTitle(savedTitle);
     if (savedDesc) setDescription(savedDesc);
     if (savedGoal) setGoalStr(savedGoal);
     if (savedImageUrl) setImageUrl(savedImageUrl);
+    if (savedPixKey) setPixKey(savedPixKey);
+    if (savedPixHolder) setPixHolder(savedPixHolder);
+    if (savedPixBank) setPixBank(savedPixBank);
   };
 
   const fetchCampaignConfig = async (supabase: any) => {
@@ -73,6 +82,9 @@ export default function Admin() {
         setDescription(data.description || 'Ajude-nos a adquirir o novo microfone...');
         setGoalStr(data.goal ? data.goal.toString() : '500');
         setImageUrl(data.image_url || '/lark-microphone.jpg');
+        setPixKey(data.pix_key || '');
+        setPixHolder(data.pix_holder || '');
+        setPixBank(data.pix_bank || '');
       }
     } catch (err: any) {
       console.warn('Could not load campaign config from Supabase, loading local:', err.message);
@@ -214,7 +226,10 @@ export default function Admin() {
           title: title.trim(),
           description: description.trim(),
           goal: parsedGoal,
-          image_url: finalImageUrl
+          image_url: finalImageUrl,
+          pix_key: pixKey.trim(),
+          pix_holder: pixHolder.trim(),
+          pix_bank: pixBank.trim()
         };
 
         const { error } = await supabase
@@ -230,6 +245,9 @@ export default function Admin() {
         localStorage.setItem('campaign_description', description.trim());
         localStorage.setItem('campaign_goal', parsedGoal.toString());
         localStorage.setItem('campaign_image_url', finalImageUrl);
+        localStorage.setItem('campaign_pix_key', pixKey.trim());
+        localStorage.setItem('campaign_pix_holder', pixHolder.trim());
+        localStorage.setItem('campaign_pix_bank', pixBank.trim());
 
         setSuccessMsg('Configurações atualizadas na nuvem com sucesso!');
         setCoverFile(null);
@@ -239,6 +257,9 @@ export default function Admin() {
         localStorage.setItem('campaign_description', description.trim());
         localStorage.setItem('campaign_goal', parsedGoal.toString());
         localStorage.setItem('campaign_image_url', finalImageUrl);
+        localStorage.setItem('campaign_pix_key', pixKey.trim());
+        localStorage.setItem('campaign_pix_holder', pixHolder.trim());
+        localStorage.setItem('campaign_pix_bank', pixBank.trim());
         
         setSuccessMsg('Configurações salvas localmente!');
         setCoverFile(null);
@@ -356,6 +377,49 @@ export default function Admin() {
                         className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-slate-200 text-xs focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all inline-code text-slate-600"
                       />
                     </div>
+                  </div>
+                </div>
+
+                {/* PIX INFO */}
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                  <div>
+                    <label htmlFor="config-pix-key" className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1.5">
+                      Chave PIX
+                    </label>
+                    <input 
+                      id="config-pix-key"
+                      type="text"
+                      value={pixKey}
+                      onChange={(e) => setPixKey(e.target.value)}
+                      placeholder="Chave (CPF, e-mail, etc)"
+                      className="w-full px-4 py-2.5 rounded-xl border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all font-semibold"
+                    />
+                  </div>
+                  <div>
+                    <label htmlFor="config-pix-holder" className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1.5">
+                      Titular do PIX
+                    </label>
+                    <input 
+                      id="config-pix-holder"
+                      type="text"
+                      value={pixHolder}
+                      onChange={(e) => setPixHolder(e.target.value)}
+                      placeholder="Nome Completo"
+                      className="w-full px-4 py-2.5 rounded-xl border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all font-semibold"
+                    />
+                  </div>
+                  <div>
+                    <label htmlFor="config-pix-bank" className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1.5">
+                      Banco Recebedor
+                    </label>
+                    <input 
+                      id="config-pix-bank"
+                      type="text"
+                      value={pixBank}
+                      onChange={(e) => setPixBank(e.target.value)}
+                      placeholder="Ex: Nubank, Inter..."
+                      className="w-full px-4 py-2.5 rounded-xl border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all font-semibold"
+                    />
                   </div>
                 </div>
 
