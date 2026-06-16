@@ -1,0 +1,6 @@
+{
+  "name": "Doadores de Campanha",
+  "description": "Campanha para aquisição de um microfone Hollyland Lark A1, com listagem de doadores, controle de metas e total arrecadado.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
