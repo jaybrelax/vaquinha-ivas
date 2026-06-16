@@ -2,17 +2,17 @@
 'use client';
 
 import React, { useState, useEffect, useRef } from 'react';
-import { 
-  Heart, 
-  Mic, 
-  Plus, 
-  Trash2, 
-  Target, 
-  Search, 
-  Users, 
-  Award, 
-  TrendingUp, 
-  Coins, 
+import {
+  Heart,
+  Mic,
+  Plus,
+  Trash2,
+  Target,
+  Search,
+  Users,
+  Award,
+  TrendingUp,
+  Coins,
   HelpCircle,
   Sparkles,
   Info,
@@ -70,10 +70,10 @@ export default function Home() {
   const [search, setSearch] = useState<string>('');
   const [isClient, setIsClient] = useState<boolean>(false);
   const [formError, setFormError] = useState<string>('');
-  
+
   // Collapsible toggle for form
   const [isFormOpen, setIsFormOpen] = useState<boolean>(false);
-  
+
   // File upload state
   const [receiptFile, setReceiptFile] = useState<File | null>(null);
   const [receiptPreview, setReceiptPreview] = useState<string | null>(null);
@@ -82,14 +82,14 @@ export default function Home() {
   const [isAdmin, setIsAdmin] = useState<boolean>(false);
   const [isAnonymous, setIsAnonymous] = useState<boolean>(false);
   const [isSearchOpen, setIsSearchOpen] = useState<boolean>(false);
-  
+
   // Supabase states
   const [isSupabase, setIsSupabase] = useState<boolean>(false);
   const [showConfigTips, setShowConfigTips] = useState<boolean>(false);
   const [isLoadingDb, setIsLoadingDb] = useState<boolean>(true);
   const [dbError, setDbError] = useState<string>('');
   const [tableMissing, setTableMissing] = useState<boolean>(false);
-  
+
   // Modal for viewer
   const [activeReceiptUrl, setActiveReceiptUrl] = useState<string | null>(null);
   const [activeReceiptDonorId, setActiveReceiptDonorId] = useState<string | null>(null);
@@ -108,7 +108,7 @@ export default function Home() {
     const savedPixBank = localStorage.getItem('campaign_pix_bank');
     const savedCountdownActive = localStorage.getItem('campaign_is_countdown_active');
     const savedCountdownDeadline = localStorage.getItem('campaign_countdown_deadline');
-    
+
     if (savedDonors) {
       try {
         setDonors(JSON.parse(savedDonors));
@@ -186,12 +186,12 @@ export default function Home() {
       }
     } catch (err: any) {
       console.error('Supabase fetch error details:', err);
-      
+
       const errMsg = err.message || '';
-      const isMissing = errMsg.includes('donations') || 
-                        errMsg.includes('campaign_config') || 
-                        errMsg.includes('schema cache') || 
-                        errMsg.includes('relation');
+      const isMissing = errMsg.includes('donations') ||
+        errMsg.includes('campaign_config') ||
+        errMsg.includes('schema cache') ||
+        errMsg.includes('relation');
 
       if (isMissing) {
         setTableMissing(true);
@@ -208,7 +208,7 @@ export default function Home() {
   // Initialize and check Supabase connection
   useEffect(() => {
     setIsClient(true);
-    
+
     // Check URL for admin
     const urlParams = new URLSearchParams(window.location.search);
     if (urlParams.get('admin') === 'true') {
@@ -220,7 +220,7 @@ export default function Home() {
     }
 
     const supabase = getSupabase();
-    
+
     if (supabase) {
       setIsSupabase(true);
       fetchSupabaseDonations();
@@ -453,9 +453,9 @@ export default function Home() {
         const { data, error } = await supabase
           .from('donations')
           .insert([
-            { 
-              name: name.trim(), 
-              amount: parsedAmount, 
+            {
+              name: name.trim(),
+              amount: parsedAmount,
               receipt_url: uploadedUrl,
               is_anonymous: isAnonymous
             }
@@ -504,7 +504,7 @@ export default function Home() {
   const handleUploadMissingReceipt = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file || !activeReceiptDonorId) return;
-    
+
     // validate type
     const validTypes = ['image/jpeg', 'image/png', 'image/webp', 'application/pdf'];
     if (!validTypes.includes(file.type)) {
@@ -519,13 +519,13 @@ export default function Home() {
 
       if (isSupabase && supabase) {
         uploadedUrl = await uploadToSupabase(file);
-        
+
         // Update row in Supabase
         const { error } = await supabase
           .from('donations')
           .update({ receipt_url: uploadedUrl })
           .eq('id', activeReceiptDonorId);
-          
+
         if (error) throw error;
       } else {
         // Fallback local mode
@@ -534,15 +534,15 @@ export default function Home() {
           reader.onloadend = () => resolve(reader.result as string);
           reader.readAsDataURL(file);
         });
-        
+
         // Sync local storage manually here if needed or let the existing useEffect catch the donors change
       }
 
       // Update local state to reflect the new receipt
-      setDonors(currentDonors => 
+      setDonors(currentDonors =>
         currentDonors.map(d => d.id === activeReceiptDonorId ? { ...d, receipt_url: uploadedUrl } : d)
       );
-      
+
       // Update modal view to show the uploaded receipt instead of the upload prompt
       setActiveReceiptUrl(uploadedUrl);
     } catch (err: any) {
@@ -602,7 +602,7 @@ export default function Home() {
     }
   };
 
-  const filteredDonors = donors.filter(d => 
+  const filteredDonors = donors.filter(d =>
     d.name.toLowerCase().includes(search.toLowerCase())
   );
 
@@ -634,7 +634,7 @@ export default function Home() {
 
       {/* CORE CONTAINER */}
       <main className="relative max-w-xl mx-auto px-4 pt-8">
-        
+
         {/* HEADER BRAND REMOVED AS REQUESTED */}
 
         {/* DATABASE TABLE MISSING ALERT */}
@@ -708,14 +708,14 @@ export default function Home() {
         {/* INSTRUCTIONAL TIP PANEL */}
         <AnimatePresence>
           {showConfigTips && (
-            <motion.section 
+            <motion.section
               initial={{ opacity: 0, height: 0 }}
               animate={{ opacity: 1, height: 'auto' }}
               exit={{ opacity: 0, height: 0 }}
               className="overflow-hidden mb-6"
             >
               <div className="bg-white border border-indigo-100 rounded-3xl p-6 text-xs text-slate-600 space-y-3 shadow-sm relative">
-                <button 
+                <button
                   onClick={() => setShowConfigTips(false)}
                   className="absolute top-4 right-4 p-1 rounded-lg text-slate-300 hover:text-slate-500 hover:bg-slate-50"
                 >
@@ -755,7 +755,7 @@ export default function Home() {
         <section id="campaign-goal-card" className="bg-white border border-slate-100 rounded-3xl overflow-hidden shadow-sm hover:shadow-md transition-all duration-300 mb-6">
           <div className="relative aspect-[4/3] sm:aspect-[16/9] w-full bg-slate-900 group">
             <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/20 to-black/30 z-10" />
-            <img 
+            <img
               src={imageUrl}
               alt={title}
               referrerPolicy="no-referrer"
@@ -794,7 +794,7 @@ export default function Home() {
 
               {/* Progress visual fill bar */}
               <div className="w-full bg-slate-150 h-3 rounded-full overflow-hidden relative border border-slate-200/40 bg-slate-100">
-                <div 
+                <div
                   className="bg-indigo-500 h-full rounded-full transition-all duration-500 ease-out relative"
                   style={{ width: `${progressPercent}%` }}
                 >
@@ -806,7 +806,7 @@ export default function Home() {
                 <span className="text-slate-500 font-medium">
                   {progressPercent.toFixed(0)}% Concluído
                 </span>
-                
+
                 {remaining > 0 ? (
                   <span className="text-indigo-600 bg-indigo-50/60 px-2 py-0.5 rounded-md font-medium border border-indigo-100/50">
                     Faltam {formatCurrency(remaining)}
@@ -868,11 +868,10 @@ export default function Home() {
                     setIsCopied(true);
                     setTimeout(() => setIsCopied(false), 2000);
                   }}
-                  className={`flex items-center gap-2 px-5 py-2.5 rounded-xl font-bold transition-all ${
-                    isCopied
+                  className={`flex items-center gap-2 px-5 py-2.5 rounded-xl font-bold transition-all ${isCopied
                       ? 'bg-emerald-600 text-white border border-emerald-700/20 shadow-md shadow-emerald-600/20'
                       : 'bg-emerald-50 hover:bg-emerald-100 text-emerald-700 border border-emerald-200/60'
-                  }`}
+                    }`}
                 >
                   {isCopied ? <CheckCircle className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
                   {isCopied ? 'Chave copiada! ✅' : 'Copiar chave Pix'}
@@ -893,11 +892,10 @@ export default function Home() {
           <button
             type="button"
             onClick={() => setIsFormOpen(!isFormOpen)}
-            className={`w-full py-4 px-4 rounded-2xl text-base font-bold shadow-sm transition-all duration-300 flex items-center justify-center gap-2 cursor-pointer ${
-              isFormOpen 
-                ? 'bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-250/30' 
+            className={`w-full py-4 px-4 rounded-2xl text-base font-bold shadow-sm transition-all duration-300 flex items-center justify-center gap-2 cursor-pointer ${isFormOpen
+                ? 'bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-250/30'
                 : 'bg-indigo-600 hover:bg-indigo-700 text-white shadow-md shadow-indigo-600/10 active:scale-[0.99]'
-            }`}
+              }`}
           >
             {isFormOpen ? (
               <>
@@ -916,22 +914,22 @@ export default function Home() {
         {/* INPUT FORM PANEL (MODAL) */}
         <AnimatePresence>
           {isFormOpen && (
-            <motion.div 
+            <motion.div
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
               className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4"
               onClick={() => setIsFormOpen(false)}
             >
-              <motion.section 
-                id="donor-form-card" 
+              <motion.section
+                id="donor-form-card"
                 initial={{ scale: 0.95 }}
                 animate={{ scale: 1 }}
                 exit={{ scale: 0.95 }}
                 className="bg-white border border-slate-100 rounded-3xl p-6 shadow-2xl w-full max-w-lg max-h-[90vh] overflow-y-auto relative"
                 onClick={(e) => e.stopPropagation()}
               >
-                <button 
+                <button
                   type="button"
                   onClick={() => setIsFormOpen(false)}
                   className="absolute top-4 right-4 p-1.5 rounded-lg text-slate-400 hover:text-slate-600 hover:bg-slate-50 transition-colors"
@@ -954,7 +952,7 @@ export default function Home() {
                       <label htmlFor="donor-name" className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1.5">
                         Nome do Doador
                       </label>
-                      <input 
+                      <input
                         id="donor-name"
                         type="text"
                         placeholder="Ex: Mariana Silva"
@@ -969,9 +967,9 @@ export default function Home() {
                           <p className="text-[10px] text-slate-400 mt-0">Ocultar meu nome e comprovante publicamente</p>
                         </div>
                         <label className="relative inline-flex items-center cursor-pointer scale-90 origin-right">
-                          <input 
-                            type="checkbox" 
-                            className="sr-only peer" 
+                          <input
+                            type="checkbox"
+                            className="sr-only peer"
                             checked={isAnonymous}
                             onChange={(e) => setIsAnonymous(e.target.checked)}
                           />
@@ -988,7 +986,7 @@ export default function Home() {
                         <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
                           <span className="text-slate-400 text-sm font-semibold">R$</span>
                         </div>
-                        <input 
+                        <input
                           id="donor-amount"
                           type="text"
                           inputMode="decimal"
@@ -1012,11 +1010,10 @@ export default function Home() {
                           key={val}
                           type="button"
                           onClick={() => handleQuickDonate(val)}
-                          className={`py-1.5 rounded-xl border text-xs font-bold transition-all duration-200 ${
-                            amountStr === val.toString()
+                          className={`py-1.5 rounded-xl border text-xs font-bold transition-all duration-200 ${amountStr === val.toString()
                               ? 'bg-indigo-600 text-white border-indigo-600 shadow-sm'
                               : 'bg-slate-50/50 hover:bg-slate-100 text-slate-600 border-slate-200 cursor-pointer'
-                          }`}
+                            }`}
                         >
                           R$ {val}
                         </button>
@@ -1029,20 +1026,19 @@ export default function Home() {
                     <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1.5">
                       Comprovante de Pagamento
                     </label>
-                    <div 
+                    <div
                       onDragOver={handleDragOver}
                       onDragLeave={handleDragLeave}
                       onDrop={handleDrop}
                       onClick={() => fileInputRef.current?.click()}
-                      className={`relative border-2 border-dashed rounded-2xl p-6 flex flex-col items-center justify-center text-center cursor-pointer transition-all duration-250 ${
-                        isDragOver
+                      className={`relative border-2 border-dashed rounded-2xl p-6 flex flex-col items-center justify-center text-center cursor-pointer transition-all duration-250 ${isDragOver
                           ? 'border-indigo-500 bg-indigo-50/50'
                           : receiptFile
                             ? 'border-emerald-300 bg-emerald-50/10'
                             : 'border-slate-200 hover:border-indigo-400 hover:bg-slate-50/40'
-                      }`}
+                        }`}
                     >
-                      <input 
+                      <input
                         ref={fileInputRef}
                         type="file"
                         accept="image/*,application/pdf"
@@ -1067,7 +1063,7 @@ export default function Home() {
                               {(receiptFile.size / 1024).toFixed(1)} KB • Arquivo adicionado
                             </p>
                           </div>
-                          
+
                           {/* Image preview micro UI */}
                           {receiptPreview && !receiptFile.type.includes('pdf') && (
                             <div className="relative w-16 h-16 rounded-lg border border-slate-100 overflow-hidden mx-auto shadow-sm">
@@ -1075,7 +1071,7 @@ export default function Home() {
                             </div>
                           )}
 
-                          <button 
+                          <button
                             type="button"
                             onClick={(e) => {
                               e.stopPropagation();
@@ -1115,11 +1111,10 @@ export default function Home() {
                   <button
                     type="submit"
                     disabled={isUploading}
-                    className={`w-full text-white py-2.5 px-4 rounded-xl text-sm font-bold shadow-md active:scale-[0.98] transition-all duration-200 flex items-center justify-center gap-1.5 cursor-pointer ${
-                      isUploading 
-                        ? 'bg-indigo-400 cursor-not-allowed' 
+                    className={`w-full text-white py-2.5 px-4 rounded-xl text-sm font-bold shadow-md active:scale-[0.98] transition-all duration-200 flex items-center justify-center gap-1.5 cursor-pointer ${isUploading
+                        ? 'bg-indigo-400 cursor-not-allowed'
                         : 'bg-indigo-600 hover:bg-indigo-700 shadow-indigo-600/10'
-                    }`}
+                      }`}
                   >
                     {isUploading ? (
                       <>
@@ -1161,11 +1156,10 @@ export default function Home() {
               <button
                 type="button"
                 onClick={() => { setIsSearchOpen(!isSearchOpen); setSearch(''); }}
-                className={`p-2 rounded-xl transition-all ${
-                  isSearchOpen
+                className={`p-2 rounded-xl transition-all ${isSearchOpen
                     ? 'bg-indigo-50 text-indigo-600'
                     : 'text-slate-400 hover:bg-slate-50 hover:text-slate-600'
-                }`}
+                  }`}
                 title="Buscar doador"
               >
                 <Search className="w-4 h-4" />
@@ -1178,7 +1172,7 @@ export default function Home() {
                 <span className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none">
                   <Search className="w-4 h-4 text-slate-400" />
                 </span>
-                <input 
+                <input
                   type="text"
                   autoFocus
                   placeholder="Buscar doador por nome..."
@@ -1202,15 +1196,15 @@ export default function Home() {
                 const isHidden = donor.is_anonymous && !isAdmin;
                 const showReceipt = donor.receipt_url && !isHidden;
                 const canClick = showReceipt || isAdmin;
-                
+
                 return (
-              <div 
-                  key={donor.id}
-                  onClick={() => { if (canClick) { setActiveReceiptUrl(donor.receipt_url || 'upload'); setActiveReceiptDonorId(donor.id); } }}
-                  className={`p-4 flex items-center justify-between transition-colors group ${canClick ? 'cursor-pointer hover:bg-indigo-50/40' : 'hover:bg-slate-50/40'}`}
-                >
-                  <div className="flex items-center gap-3">
-                    {/* Avatar: thumbnail if has receipt, else initials */}
+                  <div
+                    key={donor.id}
+                    onClick={() => { if (canClick) { setActiveReceiptUrl(donor.receipt_url || 'upload'); setActiveReceiptDonorId(donor.id); } }}
+                    className={`p-4 flex items-center justify-between transition-colors group ${canClick ? 'cursor-pointer hover:bg-indigo-50/40' : 'hover:bg-slate-50/40'}`}
+                  >
+                    <div className="flex items-center gap-3">
+                      {/* Avatar: thumbnail if has receipt, else initials */}
                       <div className={`w-10 h-10 rounded-full border-2 overflow-hidden flex items-center justify-center text-xs font-bold leading-none shrink-0 relative ${showReceipt ? 'border-transparent' : donor.is_anonymous ? 'border-amber-300' : getAvatarStyle(idx)}`}>
                         {showReceipt ? (
                           <div className={`absolute inset-0 bg-gradient-to-br flex items-center justify-center ${donor.is_anonymous ? 'from-amber-400 to-amber-500' : 'from-indigo-500 to-indigo-700'}`}>
@@ -1235,21 +1229,21 @@ export default function Home() {
                           {donor.is_anonymous && isAdmin && (
                             <span className="inline-flex items-center gap-1 text-[9px] font-bold text-amber-600 bg-amber-50 px-2 py-0.5 rounded-full border border-amber-200/60 uppercase tracking-wider">
                               <svg className="w-2.5 h-2.5" fill="currentColor" viewBox="0 0 20 20">
-                                <path fillRule="evenodd" d="M3.707 2.293a1 1 0 00-1.414 1.414l14 14a1 1 0 001.414-1.414l-1.473-1.473A10.012 10.012 0 0010 3a10.012 10.012 0 00-6.293 2.293zm2.007 6.721A4 4 0 0114 10a4 4 0 01-1.2 2.8l-1.346-1.346A2 2 0 008.546 7.86zm-1.346 1.346A4 4 0 0014 10a4 4 0 01-1.2 2.8zM10 17a10.012 10.012 0 01-6.293-2.293 1 1 0 111.414-1.414A8.012 8.012 0 0010 15c1.5 0 2.9-.4 4.1-1.1l1.346 1.346A10.012 10.012 0 0110 17z" clipRule="evenodd"/>
+                                <path fillRule="evenodd" d="M3.707 2.293a1 1 0 00-1.414 1.414l14 14a1 1 0 001.414-1.414l-1.473-1.473A10.012 10.012 0 0010 3a10.012 10.012 0 00-6.293 2.293zm2.007 6.721A4 4 0 0114 10a4 4 0 01-1.2 2.8l-1.346-1.346A2 2 0 008.546 7.86zm-1.346 1.346A4 4 0 0014 10a4 4 0 01-1.2 2.8zM10 17a10.012 10.012 0 01-6.293-2.293 1 1 0 111.414-1.414A8.012 8.012 0 0010 15c1.5 0 2.9-.4 4.1-1.1l1.346 1.346A10.012 10.012 0 0110 17z" clipRule="evenodd" />
                               </svg>
                               Anônimo
                             </span>
                           )}
                         </div>
                       </div>
-                  </div>
+                    </div>
 
-                  <div className="flex items-center gap-3">
-                    <span className="text-sm font-bold text-indigo-600 bg-indigo-55/60 px-2.5 py-1 rounded-lg border border-indigo-100/30">
-                      {formatCurrency(donor.amount)}
-                    </span>
+                    <div className="flex items-center gap-3">
+                      <span className="text-sm font-bold text-indigo-600 bg-indigo-55/60 px-2.5 py-1 rounded-lg border border-indigo-100/30">
+                        {formatCurrency(donor.amount)}
+                      </span>
+                    </div>
                   </div>
-                </div>
                 );
               })
             ) : (
@@ -1257,8 +1251,8 @@ export default function Home() {
                 <Heart className="w-8 h-8 stroke-[1.5] text-slate-300 mb-2" />
                 <p className="text-xs font-semibold">Nenhuma doação registrada nesta vaquinha</p>
                 <p className="text-[10px] text-slate-400 max-w-[220px] mt-1 mx-auto text-center">
-                  {donors.length === 0 
-                    ? 'Abra o formulário no botão acima para registrar a primeira contribuição da campanha!' 
+                  {donors.length === 0
+                    ? 'Abra o formulário no botão acima para registrar a primeira contribuição da campanha!'
                     : 'Nenhum resultado corresponde à busca.'}
                 </p>
               </div>
@@ -1315,8 +1309,8 @@ export default function Home() {
           <div className="flex flex-wrap justify-center gap-2">
             {/* Admin control panel link — discrete */}
             {isAdmin && (
-              <Link 
-                href="/admin" 
+              <Link
+                href="/admin"
                 className="inline-flex items-center gap-1.5 px-3 py-1 bg-transparent hover:bg-slate-100 border border-slate-200/40 text-slate-400 hover:text-slate-500 rounded-full text-xs font-medium transition-all duration-200"
                 title="Ir para o Painel Administrativo"
               >
@@ -1327,7 +1321,7 @@ export default function Home() {
           </div>
 
           <div className="space-y-1">
-            <p>© 2026 Campanha Hollyland Lark A1 • Desenvolvido por Jay Lax Dev.</p>
+            <p>© 2026 Sistema de Vaquinha da Virtude da Caridade IVAS • Desenvolvido por Jay Lax Dev.</p>
           </div>
         </footer>
 
@@ -1336,21 +1330,21 @@ export default function Home() {
       {/* COMPROVANTE VIEWER MODAL DIALOG */}
       <AnimatePresence>
         {activeReceiptDonorId && activeReceiptUrl && (
-          <motion.div 
+          <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             className="fixed inset-0 z-50 bg-slate-900/70 backdrop-blur-sm flex items-end sm:items-center justify-center p-0 sm:p-4"
             onClick={() => { setActiveReceiptUrl(null); setActiveReceiptDonorId(null); }}
           >
-            <motion.div 
+            <motion.div
               initial={{ scale: 0.95 }}
               animate={{ scale: 1 }}
               exit={{ scale: 0.95 }}
               className="bg-white rounded-t-3xl sm:rounded-3xl p-5 w-full sm:max-w-sm shadow-2xl relative max-h-[95vh] flex flex-col"
               onClick={(e) => e.stopPropagation()}
             >
-              <button 
+              <button
                 onClick={() => { setActiveReceiptUrl(null); setActiveReceiptDonorId(null); }}
                 className="absolute top-4 right-4 p-1.5 rounded-lg text-slate-400 hover:text-slate-600 hover:bg-slate-50 transition-colors"
               >
@@ -1401,12 +1395,12 @@ export default function Home() {
                     <p className="text-[10px] text-slate-400">Esta doação não possui anexo de comprovante.</p>
                   </div>
                   <label className="mt-2 text-xs font-bold text-indigo-600 bg-indigo-50 hover:bg-indigo-100 px-4 py-2 rounded-xl flex items-center gap-1 cursor-pointer transition-colors border border-indigo-100/50">
-                    <input 
-                      type="file" 
-                      className="hidden" 
-                      accept="image/*,application/pdf" 
-                      onChange={handleUploadMissingReceipt} 
-                      disabled={isUploading} 
+                    <input
+                      type="file"
+                      className="hidden"
+                      accept="image/*,application/pdf"
+                      onChange={handleUploadMissingReceipt}
+                      disabled={isUploading}
                     />
                     {isUploading ? 'Enviando...' : 'Fazer Upload agora'}
                   </label>
@@ -1418,7 +1412,7 @@ export default function Home() {
                     <p className="text-xs font-bold text-slate-700">Arquivo de Recibo PDF</p>
                     <p className="text-[10px] text-slate-400">Este formato de arquivo PDF pode ser acessado no link do botão abaixo</p>
                   </div>
-                  <a 
+                  <a
                     href={activeReceiptUrl}
                     target="_blank"
                     rel="noreferrer"
@@ -1429,9 +1423,9 @@ export default function Home() {
                 </div>
               ) : (
                 <div className="rounded-2xl overflow-hidden bg-slate-50 flex-1 min-h-0 flex items-center justify-center">
-                  <img 
-                    src={activeReceiptUrl} 
-                    alt="Comprovante de pagamento" 
+                  <img
+                    src={activeReceiptUrl}
+                    alt="Comprovante de pagamento"
                     className="w-full h-full object-contain max-h-[60vh]"
                   />
                 </div>
