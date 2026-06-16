@@ -227,11 +227,19 @@ export default function Home() {
           { event: 'INSERT', schema: 'public', table: 'donations' },
           (payload) => {
             console.log('New donation received via realtime:', payload);
+            const d = payload.new;
+            const newDonor: Donor = {
+              id: d.id,
+              name: d.name,
+              amount: parseFloat(d.amount),
+              date: d.created_at ? d.created_at.split('T')[0] : new Date().toISOString().split('T')[0],
+              receipt_url: d.receipt_url,
+            };
             // Append the new donation to the start of the list
             setDonors((currentDonors) => {
               // Ensure we don't duplicate if we already have it locally
-              if (currentDonors.some(d => d.id === payload.new.id)) return currentDonors;
-              return [payload.new as Donor, ...currentDonors];
+              if (currentDonors.some(donor => donor.id === newDonor.id)) return currentDonors;
+              return [newDonor, ...currentDonors];
             });
           }
         )
@@ -1073,7 +1081,7 @@ export default function Home() {
                         {donor.name}
                       </h4>
                       <p className="text-[10px] text-slate-400 font-medium">
-                        Doador nº {donors.length - idx} • {donor.date.split('-').reverse().join('/')}
+                        Doador nº {idx + 1} • {donor.date ? donor.date.split('-').reverse().join('/') : ''}
                       </p>
                     </div>
                   </div>
