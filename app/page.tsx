@@ -30,7 +30,8 @@ import {
   Sliders,
   Copy,
   UploadCloud,
-  Clock
+  Clock,
+  EyeOff
 } from 'lucide-react';
 import { getSupabase } from '@/lib/supabase';
 import { motion, AnimatePresence } from 'motion/react';
@@ -820,7 +821,7 @@ export default function Home() {
 
               {/* COUNTDOWN TIMER */}
               {isCountdownActive && timeLeft && (
-                <div className="mt-5 bg-slate-50 border border-slate-100 rounded-2xl p-4 flex flex-col items-center justify-center">
+                <div className="mt-5 bg-slate-50/80 backdrop-blur-sm border border-slate-100/50 rounded-2xl p-4 flex flex-col items-center justify-center animate-countdown-glow">
                   <div className="flex items-center gap-1.5 mb-3 text-[10px] uppercase tracking-wider font-bold text-slate-500">
                     <Clock className="w-3.5 h-3.5" />
                     Tempo Restante
@@ -892,7 +893,7 @@ export default function Home() {
           <button
             type="button"
             onClick={() => setIsFormOpen(!isFormOpen)}
-            className={`w-full py-3 px-4 rounded-2xl text-sm font-bold shadow-sm transition-all duration-300 flex items-center justify-center gap-2 cursor-pointer ${
+            className={`w-full py-4 px-4 rounded-2xl text-base font-bold shadow-sm transition-all duration-300 flex items-center justify-center gap-2 cursor-pointer ${
               isFormOpen 
                 ? 'bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-250/30' 
                 : 'bg-indigo-600 hover:bg-indigo-700 text-white shadow-md shadow-indigo-600/10 active:scale-[0.99]'
@@ -900,13 +901,13 @@ export default function Home() {
           >
             {isFormOpen ? (
               <>
-                <X className="w-4 h-4" />
+                <X className="w-5 h-5" />
                 Fechar Formulário de Doações
               </>
             ) : (
               <>
-                <Plus className="w-4 h-4 stroke-[3]" />
-                Registrar Nova Doação
+                <Plus className="w-5 h-5 stroke-[3]" />
+                ADICIONAR NOVA DOAÇÃO
               </>
             )}
           </button>
@@ -1210,24 +1211,37 @@ export default function Home() {
                 >
                   <div className="flex items-center gap-3">
                     {/* Avatar: thumbnail if has receipt, else initials */}
-                    <div className={`w-10 h-10 rounded-full border-2 overflow-hidden flex items-center justify-center text-xs font-bold leading-none shrink-0 relative ${showReceipt ? 'border-indigo-400/60' : getAvatarStyle(idx)}`}>
-                      {showReceipt ? (
-                        <div className="absolute inset-0 bg-gradient-to-br from-indigo-500 to-indigo-700 flex items-center justify-center">
-                          <Eye className="w-4 h-4 text-white" />
+                      <div className={`w-10 h-10 rounded-full border-2 overflow-hidden flex items-center justify-center text-xs font-bold leading-none shrink-0 relative ${showReceipt ? 'border-transparent' : donor.is_anonymous ? 'border-amber-300' : getAvatarStyle(idx)}`}>
+                        {showReceipt ? (
+                          <div className={`absolute inset-0 bg-gradient-to-br flex items-center justify-center ${donor.is_anonymous ? 'from-amber-400 to-amber-500' : 'from-indigo-500 to-indigo-700'}`}>
+                            <Eye className="w-4 h-4 text-white" />
+                          </div>
+                        ) : donor.is_anonymous ? (
+                          <div className="absolute inset-0 bg-gradient-to-br from-amber-400 to-amber-500 flex items-center justify-center">
+                            <EyeOff className="w-4 h-4 text-white" />
+                          </div>
+                        ) : (
+                          getInitials(isHidden ? 'Anônimo' : donor.name)
+                        )}
+                      </div>
+                      <div>
+                        <h4 className="text-sm font-extrabold text-slate-900 line-clamp-1 uppercase tracking-wide">
+                          {isHidden ? 'Doador Anônimo' : donor.name}
+                        </h4>
+                        <div className="flex items-center gap-1.5 flex-wrap">
+                          <p className="text-[10px] text-slate-400 font-medium">
+                            Doador nº {idx + 1} • {donor.date ? donor.date.split('-').reverse().join('/') : ''}
+                          </p>
+                          {donor.is_anonymous && isAdmin && (
+                            <span className="inline-flex items-center gap-1 text-[9px] font-bold text-amber-600 bg-amber-50 px-2 py-0.5 rounded-full border border-amber-200/60 uppercase tracking-wider">
+                              <svg className="w-2.5 h-2.5" fill="currentColor" viewBox="0 0 20 20">
+                                <path fillRule="evenodd" d="M3.707 2.293a1 1 0 00-1.414 1.414l14 14a1 1 0 001.414-1.414l-1.473-1.473A10.012 10.012 0 0010 3a10.012 10.012 0 00-6.293 2.293zm2.007 6.721A4 4 0 0114 10a4 4 0 01-1.2 2.8l-1.346-1.346A2 2 0 008.546 7.86zm-1.346 1.346A4 4 0 0014 10a4 4 0 01-1.2 2.8zM10 17a10.012 10.012 0 01-6.293-2.293 1 1 0 111.414-1.414A8.012 8.012 0 0010 15c1.5 0 2.9-.4 4.1-1.1l1.346 1.346A10.012 10.012 0 0110 17z" clipRule="evenodd"/>
+                              </svg>
+                              Anônimo
+                            </span>
+                          )}
                         </div>
-                      ) : (
-                        getInitials(isHidden ? 'Anônimo' : donor.name)
-                      )}
-                    </div>
-                    <div>
-                      <h4 className="text-sm font-extrabold text-slate-900 line-clamp-1 uppercase tracking-wide">
-                        {isHidden ? 'Doador Anônimo' : donor.name}
-                        {donor.is_anonymous && isAdmin && <span className="ml-2 text-[9px] font-bold text-rose-500 bg-rose-50 px-1.5 py-0.5 rounded-md border border-rose-100">Oculto</span>}
-                      </h4>
-                      <p className="text-[10px] text-slate-400 font-medium">
-                        Doador nº {idx + 1} • {donor.date ? donor.date.split('-').reverse().join('/') : ''}
-                      </p>
-                    </div>
+                      </div>
                   </div>
 
                   <div className="flex items-center gap-3">
@@ -1356,6 +1370,28 @@ export default function Home() {
                   </p>
                 </div>
               </div>
+
+              {activeReceiptDonorId && (() => {
+                const donor = donors.find(d => d.id === activeReceiptDonorId);
+                if (!donor) return null;
+                return (
+                  <div className="mb-4 flex items-center justify-between bg-slate-50 rounded-xl px-4 py-3 border border-slate-100/60">
+                    <div className="flex items-center gap-2.5 min-w-0">
+                      <div className="w-8 h-8 rounded-full bg-indigo-100 text-indigo-600 flex items-center justify-center text-xs font-black shrink-0">
+                        {donor.name.charAt(0).toUpperCase()}
+                      </div>
+                      <div className="min-w-0">
+                        <p className="text-sm font-bold text-slate-700 truncate">{donor.name}</p>
+                        <p className="text-[10px] text-slate-400">Doador</p>
+                      </div>
+                    </div>
+                    <div className="text-right shrink-0 ml-3">
+                      <p className="text-sm font-black text-indigo-600">{formatCurrency(donor.amount)}</p>
+                      <p className="text-[10px] text-slate-400">Valor</p>
+                    </div>
+                  </div>
+                );
+              })()}
 
               {activeReceiptUrl === 'upload' ? (
                 <div className="bg-slate-50 border border-dashed border-slate-200 rounded-2xl p-8 flex flex-col items-center justify-center text-center gap-3">

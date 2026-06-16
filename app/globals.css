@@ -1,1 +1,20 @@
 @import "tailwindcss";
+
+@keyframes countdown-pulse {
+  0%, 100% {
+    box-shadow:
+      0 0 8px rgba(99, 102, 241, 0.10),
+      0 0 24px rgba(99, 102, 241, 0.04);
+    border-color: rgba(99, 102, 241, 0.18);
+  }
+  50% {
+    box-shadow:
+      0 0 18px rgba(99, 102, 241, 0.22),
+      0 0 48px rgba(99, 102, 241, 0.08);
+    border-color: rgba(99, 102, 241, 0.35);
+  }
+}
+
+.animate-countdown-glow {
+  animation: countdown-pulse 3s ease-in-out infinite;
+}
