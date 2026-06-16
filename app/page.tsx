@@ -83,6 +83,7 @@ export default function Home() {
   
   // Modal for viewer
   const [activeReceiptUrl, setActiveReceiptUrl] = useState<string | null>(null);
+  const [activeReceiptDonorId, setActiveReceiptDonorId] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const loadLocalDonations = () => {
@@ -1037,32 +1038,26 @@ export default function Home() {
               </div>
             ) : filteredDonors.length > 0 ? (
               [...filteredDonors].reverse().map((donor, idx) => (
-                <div 
+              <div 
                   key={donor.id}
-                  className="p-4 flex items-center justify-between hover:bg-slate-50/40 transition-colors group"
+                  onClick={() => { if (donor.receipt_url) { setActiveReceiptUrl(donor.receipt_url); setActiveReceiptDonorId(donor.id); } }}
+                  className={`p-4 flex items-center justify-between transition-colors group ${donor.receipt_url ? 'cursor-pointer hover:bg-indigo-50/40' : 'hover:bg-slate-50/40'}`}
                 >
                   <div className="flex items-center gap-3">
-                    <div className={`w-9 h-9 rounded-full border flex items-center justify-center text-xs font-bold leading-none shrink-0 ${getAvatarStyle(idx)}`}>
-                      {getInitials(donor.name)}
+                    {/* Avatar: thumbnail if has receipt, else initials */}
+                    <div className={`w-10 h-10 rounded-full border-2 overflow-hidden flex items-center justify-center text-xs font-bold leading-none shrink-0 relative ${donor.receipt_url ? 'border-indigo-400/60' : getAvatarStyle(idx)}`}>
+                      {donor.receipt_url ? (
+                        <div className="absolute inset-0 bg-gradient-to-br from-indigo-500 to-indigo-700 flex items-center justify-center">
+                          <Eye className="w-4 h-4 text-white" />
+                        </div>
+                      ) : (
+                        getInitials(donor.name)
+                      )}
                     </div>
                     <div>
-                      <div className="flex items-center gap-1.5">
-                        <h4 className="text-base font-extrabold text-slate-900 line-clamp-1 uppercase tracking-wide">
-                          {donor.name}
-                        </h4>
-                        
-                        {/* Receipt Icon Badge click activity */}
-                        {donor.receipt_url && (
-                          <button
-                            type="button"
-                            onClick={() => setActiveReceiptUrl(donor.receipt_url || null)}
-                            className="p-1 rounded bg-indigo-50 hover:bg-indigo-100 text-indigo-500 cursor-pointer transition-colors"
-                            title="Ver Comprovante"
-                          >
-                            <Eye className="w-3.5 h-3.5" />
-                          </button>
-                        )}
-                      </div>
+                      <h4 className="text-sm font-extrabold text-slate-900 line-clamp-1 uppercase tracking-wide">
+                        {donor.name}
+                      </h4>
                       <p className="text-[10px] text-slate-400 font-medium">
                         Doador nº {donors.length - idx} • {donor.date.split('-').reverse().join('/')}
                       </p>
@@ -1073,14 +1068,6 @@ export default function Home() {
                     <span className="text-sm font-bold text-indigo-600 bg-indigo-55/60 px-2.5 py-1 rounded-lg border border-indigo-100/30">
                       {formatCurrency(donor.amount)}
                     </span>
-                    <button
-                      type="button"
-                      onClick={() => handleDeleteDonor(donor.id, donor.name)}
-                      className="p-1.5 rounded-lg text-slate-300 hover:text-rose-500 hover:bg-rose-50 sm:opacity-0 group-hover:opacity-100 transition-all duration-250 cursor-pointer animate-fade-in"
-                      title="Excluir doação"
-                    >
-                      <Trash2 className="w-4 h-4" />
-                    </button>
                   </div>
                 </div>
               ))
@@ -1101,9 +1088,9 @@ export default function Home() {
             <div className="p-4 bg-slate-50/55 border-t border-slate-100 flex items-center justify-between text-xs text-slate-500 font-medium">
               <span className="flex items-center gap-1.5">
                 <Coins className="w-3.5 h-3.5 text-slate-400" />
-                Fundo Arrecadado
+                Total
               </span>
-              <span className="font-extrabold text-indigo-600 bg-indigo-50/60 px-2.5 py-1 rounded-md border border-indigo-105/30">
+              <span className="font-extrabold text-indigo-600 bg-indigo-50/60 px-2.5 py-1 rounded-md">
                 {formatCurrency(totalRaised)}
               </span>
             </div>
@@ -1145,44 +1132,18 @@ export default function Home() {
         {/* APP FOOTER INFO */}
         <footer className="mt-8 pb-8 text-center text-[10px] text-slate-400 font-medium space-y-5">
           <div className="flex flex-wrap justify-center gap-2">
-            <span className="inline-flex items-center gap-1.5 px-3 py-1 bg-indigo-50/50 border border-indigo-100/50 text-indigo-700/80 rounded-full text-xs font-semibold">
-              <Sparkles className="w-3.5 h-3.5 text-indigo-500/80" />
-              Meta Coletiva 2026
-            </span>
-
-            {/* Supabase status badge */}
-            <button 
-              onClick={() => {
-                setShowConfigTips(!showConfigTips);
-                window.scrollTo({ top: 0, behavior: 'smooth' });
-              }}
-              className={`inline-flex items-center gap-1.5 px-3 py-1 border rounded-full text-xs font-semibold cursor-pointer transition-all duration-200 ${
-                isSupabase && !dbError
-                  ? 'bg-emerald-50/50 border-emerald-100/50 text-emerald-700/80 hover:bg-emerald-100/80'
-                  : 'bg-amber-50/50 border-amber-100/50 text-amber-700/80 hover:bg-amber-100/80'
-              }`}
-              title="Clique para ver instruções de integração"
-            >
-              <Database className="w-3.5 h-3.5" />
-              {isSupabase && !dbError ? 'Supabase Conectado' : 'Modo Local (Banco Inativo)'}
-            </button>
-
-            {/* Admin control panel link */}
+            {/* Admin control panel link — discrete */}
             <Link 
               href="/admin" 
-              className="inline-flex items-center gap-1.5 px-3 py-1 bg-white/50 hover:bg-slate-100 border border-slate-200/50 text-indigo-600/80 hover:text-indigo-700 rounded-full text-xs font-bold transition-all duration-200"
+              className="inline-flex items-center gap-1.5 px-3 py-1 bg-transparent hover:bg-slate-100 border border-slate-200/40 text-slate-400 hover:text-slate-500 rounded-full text-xs font-medium transition-all duration-200"
               title="Ir para o Painel Administrativo"
             >
-              <Settings className="w-3.5 h-3.5 text-indigo-500/80" />
-              Painel Admin
+              <Settings className="w-3 h-3" />
+              Admin
             </Link>
           </div>
 
           <div className="space-y-1">
-            <p className="flex items-center justify-center gap-1">
-              <HelpCircle className="w-3.5 h-3.5 text-slate-400/80" />
-              Ao configurar o Supabase, os dados sincronizam instantaneamente na nuvem.
-            </p>
             <p>© 2026 Campanha Hollyland Lark A1 • Desenvolvido por Jay Lax Dev.</p>
           </div>
         </footer>
@@ -1196,14 +1157,14 @@ export default function Home() {
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4"
+            className="fixed inset-0 z-50 bg-slate-900/70 backdrop-blur-sm flex items-end sm:items-center justify-center p-0 sm:p-4"
             onClick={() => setActiveReceiptUrl(null)}
           >
             <motion.div 
               initial={{ scale: 0.95 }}
               animate={{ scale: 1 }}
               exit={{ scale: 0.95 }}
-              className="bg-white rounded-3xl p-6 max-w-sm w-full shadow-2xl relative"
+              className="bg-white rounded-t-3xl sm:rounded-3xl p-5 w-full sm:max-w-sm shadow-2xl relative max-h-[95vh] flex flex-col"
               onClick={(e) => e.stopPropagation()}
             >
               <button 
@@ -1240,22 +1201,37 @@ export default function Home() {
                   </a>
                 </div>
               ) : (
-                <div className="border border-slate-100 rounded-2xl overflow-hidden shadow-inner max-h-96 bg-slate-50 relative flex items-center justify-center">
+                <div className="rounded-2xl overflow-hidden bg-slate-50 flex-1 min-h-0 flex items-center justify-center">
                   <img 
                     src={activeReceiptUrl} 
                     alt="Comprovante de pagamento" 
-                    className="max-h-80 w-full object-contain"
+                    className="w-full h-full object-contain max-h-[60vh]"
                   />
                 </div>
               )}
 
-              <div className="mt-4 flex justify-end">
+              <div className="mt-4 flex justify-between items-center">
                 <button
                   type="button"
-                  onClick={() => setActiveReceiptUrl(null)}
+                  onClick={() => {
+                    if (activeReceiptDonorId) {
+                      const donor = donors.find(d => d.id === activeReceiptDonorId);
+                      if (donor) handleDeleteDonor(donor.id, donor.name);
+                    }
+                    setActiveReceiptUrl(null);
+                    setActiveReceiptDonorId(null);
+                  }}
+                  className="p-2 text-slate-300 hover:text-rose-400 hover:bg-rose-50 rounded-xl transition-all"
+                  title="Excluir doação"
+                >
+                  <Trash2 className="w-4 h-4" />
+                </button>
+                <button
+                  type="button"
+                  onClick={() => { setActiveReceiptUrl(null); setActiveReceiptDonorId(null); }}
                   className="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs rounded-xl transition-all"
                 >
-                  Fechar janela
+                  Fechar
                 </button>
               </div>
             </motion.div>
