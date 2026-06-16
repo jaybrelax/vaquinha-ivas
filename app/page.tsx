@@ -28,7 +28,9 @@ import {
   ChevronUp,
   Settings,
   Sliders,
-  Copy
+  Copy,
+  UploadCloud,
+  Clock
 } from 'lucide-react';
 import { getSupabase } from '@/lib/supabase';
 import { motion, AnimatePresence } from 'motion/react';
@@ -40,6 +42,7 @@ interface Donor {
   amount: number;
   date: string;
   receipt_url?: string | null;
+  is_anonymous?: boolean;
 }
 
 const INITIAL_DONORS: Donor[] = [
@@ -57,6 +60,9 @@ export default function Home() {
   const [pixKey, setPixKey] = useState<string>('');
   const [pixHolder, setPixHolder] = useState<string>('');
   const [pixBank, setPixBank] = useState<string>('');
+  const [isCountdownActive, setIsCountdownActive] = useState<boolean>(false);
+  const [countdownDeadline, setCountdownDeadline] = useState<string | null>(null);
+  const [timeLeft, setTimeLeft] = useState<{ d: number, h: number, m: number, s: number } | null>(null);
   const [isCopied, setIsCopied] = useState<boolean>(false);
   const [name, setName] = useState<string>('');
   const [amountStr, setAmountStr] = useState<string>('');
@@ -72,6 +78,8 @@ export default function Home() {
   const [receiptPreview, setReceiptPreview] = useState<string | null>(null);
   const [isUploading, setIsUploading] = useState<boolean>(false);
   const [isDragOver, setIsDragOver] = useState<boolean>(false);
+  const [isAdmin, setIsAdmin] = useState<boolean>(false);
+  const [isAnonymous, setIsAnonymous] = useState<boolean>(false);
   const [isSearchOpen, setIsSearchOpen] = useState<boolean>(false);
   
   // Supabase states
@@ -94,6 +102,11 @@ export default function Home() {
     const savedTitle = localStorage.getItem('campaign_title');
     const savedDesc = localStorage.getItem('campaign_description');
     const savedImageUrl = localStorage.getItem('campaign_image_url');
+    const savedPixKey = localStorage.getItem('campaign_pix_key');
+    const savedPixHolder = localStorage.getItem('campaign_pix_holder');
+    const savedPixBank = localStorage.getItem('campaign_pix_bank');
+    const savedCountdownActive = localStorage.getItem('campaign_is_countdown_active');
+    const savedCountdownDeadline = localStorage.getItem('campaign_countdown_deadline');
     
     if (savedDonors) {
       try {
@@ -105,20 +118,15 @@ export default function Home() {
       setDonors(INITIAL_DONORS);
     }
 
-    if (savedGoal) {
-      const g = parseFloat(savedGoal);
-      if (!isNaN(g)) setGoal(g);
-    }
     if (savedTitle) setTitle(savedTitle);
     if (savedDesc) setDescription(savedDesc);
+    if (savedGoal) setGoal(parseFloat(savedGoal));
     if (savedImageUrl) setImageUrl(savedImageUrl);
-
-    const savedPixKey = localStorage.getItem('campaign_pix_key');
     if (savedPixKey) setPixKey(savedPixKey);
-    const savedPixHolder = localStorage.getItem('campaign_pix_holder');
     if (savedPixHolder) setPixHolder(savedPixHolder);
-    const savedPixBank = localStorage.getItem('campaign_pix_bank');
     if (savedPixBank) setPixBank(savedPixBank);
+    if (savedCountdownActive) setIsCountdownActive(savedCountdownActive === 'true');
+    if (savedCountdownDeadline) setCountdownDeadline(savedCountdownDeadline);
   };
 
   const fetchSupabaseDonations = async () => {
@@ -140,14 +148,15 @@ export default function Home() {
       }
 
       if (data) {
-        const parsedDonors: Donor[] = data.map((item: any) => ({
-          id: item.id.toString(),
-          name: item.name,
-          amount: parseFloat(item.amount),
-          date: item.created_at ? item.created_at.split('T')[0] : new Date().toISOString().split('T')[0],
-          receipt_url: item.receipt_url,
+        const formattedDonors: Donor[] = data.map((d: any) => ({
+          id: d.id.toString(),
+          name: d.name,
+          amount: parseFloat(d.amount),
+          date: d.created_at ? d.created_at.split('T')[0] : new Date().toISOString().split('T')[0],
+          receipt_url: d.receipt_url,
+          is_anonymous: d.is_anonymous || false,
         }));
-        setDonors(parsedDonors);
+        setDonors(formattedDonors);
       }
 
       // Fetch campaign configuration table
@@ -165,29 +174,14 @@ export default function Home() {
         setPixKey(configData.pix_key || '');
         setPixHolder(configData.pix_holder || '');
         setPixBank(configData.pix_bank || '');
+        setIsCountdownActive(configData.is_countdown_active || false);
+        setCountdownDeadline(configData.countdown_deadline || null);
       } else {
         if (configError && configError.message && (configError.message.includes('campaign_config') || configError.message.includes('schema cache'))) {
           throw configError;
         }
         // Fallback local campaign data
-        const savedGoal = localStorage.getItem('campaign_goal');
-        if (savedGoal) {
-          const g = parseFloat(savedGoal);
-          if (!isNaN(g)) setGoal(g);
-        }
-        const savedTitle = localStorage.getItem('campaign_title');
-        if (savedTitle) setTitle(savedTitle);
-        const savedDesc = localStorage.getItem('campaign_description');
-        if (savedDesc) setDescription(savedDesc);
-        const savedImageUrl = localStorage.getItem('campaign_image_url');
-        if (savedImageUrl) setImageUrl(savedImageUrl);
-
-        const savedPixKey = localStorage.getItem('campaign_pix_key');
-        if (savedPixKey) setPixKey(savedPixKey);
-        const savedPixHolder = localStorage.getItem('campaign_pix_holder');
-        if (savedPixHolder) setPixHolder(savedPixHolder);
-        const savedPixBank = localStorage.getItem('campaign_pix_bank');
-        if (savedPixBank) setPixBank(savedPixBank);
+        loadLocalDonations();
       }
     } catch (err: any) {
       console.error('Supabase fetch error details:', err);
@@ -213,6 +207,17 @@ export default function Home() {
   // Initialize and check Supabase connection
   useEffect(() => {
     setIsClient(true);
+    
+    // Check URL for admin
+    const urlParams = new URLSearchParams(window.location.search);
+    if (urlParams.get('admin') === 'true') {
+      localStorage.setItem('isAdmin', 'true');
+      setIsAdmin(true);
+      window.history.replaceState({}, document.title, window.location.pathname);
+    } else {
+      setIsAdmin(localStorage.getItem('isAdmin') === 'true');
+    }
+
     const supabase = getSupabase();
     
     if (supabase) {
@@ -234,6 +239,7 @@ export default function Home() {
               amount: parseFloat(d.amount),
               date: d.created_at ? d.created_at.split('T')[0] : new Date().toISOString().split('T')[0],
               receipt_url: d.receipt_url,
+              is_anonymous: d.is_anonymous || false,
             };
             // Append the new donation to the start of the list
             setDonors((currentDonors) => {
@@ -255,6 +261,29 @@ export default function Home() {
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  // Countdown timer logic
+  useEffect(() => {
+    let interval: NodeJS.Timeout | null = null;
+    if (isCountdownActive && countdownDeadline) {
+      interval = setInterval(() => {
+        const total = Date.parse(countdownDeadline) - Date.now();
+        if (total > 0) {
+          const seconds = Math.floor((total / 1000) % 60);
+          const minutes = Math.floor((total / 1000 / 60) % 60);
+          const hours = Math.floor((total / (1000 * 60 * 60)) % 24);
+          const days = Math.floor(total / (1000 * 60 * 60 * 24));
+          setTimeLeft({ d: days, h: hours, m: minutes, s: seconds });
+        } else {
+          setTimeLeft(null);
+          if (interval) clearInterval(interval);
+        }
+      }, 1000);
+    }
+    return () => {
+      if (interval) clearInterval(interval);
+    };
+  }, [isCountdownActive, countdownDeadline]);
 
   // Sync Local Fallback changes to localStorage
   useEffect(() => {
@@ -426,7 +455,8 @@ export default function Home() {
             { 
               name: name.trim(), 
               amount: parsedAmount, 
-              receipt_url: uploadedUrl 
+              receipt_url: uploadedUrl,
+              is_anonymous: isAnonymous
             }
           ])
           .select();
@@ -445,6 +475,7 @@ export default function Home() {
           amount: parsedAmount,
           date: new Date().toISOString().split('T')[0],
           receipt_url: uploadedUrl,
+          is_anonymous: isAnonymous
         };
         setDonors([newDonor, ...donors]);
       }
@@ -467,6 +498,57 @@ export default function Home() {
 
   const handleQuickDonate = (value: number) => {
     setAmountStr(value.toString());
+  };
+
+  const handleUploadMissingReceipt = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file || !activeReceiptDonorId) return;
+    
+    // validate type
+    const validTypes = ['image/jpeg', 'image/png', 'image/webp', 'application/pdf'];
+    if (!validTypes.includes(file.type)) {
+      alert('Formato inválido. Faça upload de PNG, JPG, WEBP ou PDF.');
+      return;
+    }
+
+    try {
+      setIsUploading(true);
+      let uploadedUrl: string | null = null;
+      const supabase = getSupabase();
+
+      if (isSupabase && supabase) {
+        uploadedUrl = await uploadToSupabase(file);
+        
+        // Update row in Supabase
+        const { error } = await supabase
+          .from('donations')
+          .update({ receipt_url: uploadedUrl })
+          .eq('id', activeReceiptDonorId);
+          
+        if (error) throw error;
+      } else {
+        // Fallback local mode
+        const reader = new FileReader();
+        uploadedUrl = await new Promise((resolve) => {
+          reader.onloadend = () => resolve(reader.result as string);
+          reader.readAsDataURL(file);
+        });
+        
+        // Sync local storage manually here if needed or let the existing useEffect catch the donors change
+      }
+
+      // Update local state to reflect the new receipt
+      setDonors(currentDonors => 
+        currentDonors.map(d => d.id === activeReceiptDonorId ? { ...d, receipt_url: uploadedUrl } : d)
+      );
+      
+      // Update modal view to show the uploaded receipt instead of the upload prompt
+      setActiveReceiptUrl(uploadedUrl);
+    } catch (err: any) {
+      alert(`Falha ao enviar: ${err.message}`);
+    } finally {
+      setIsUploading(false);
+    }
   };
 
   const handleDeleteDonor = async (id: string, name: string) => {
@@ -515,6 +597,7 @@ export default function Home() {
       setName('');
       setAmountStr('');
       setFormError('');
+      setIsAnonymous(false);
     }
   };
 
@@ -544,9 +627,9 @@ export default function Home() {
   };
 
   return (
-    <div className="min-h-screen bg-slate-50/50 pb-20 font-sans antialiased text-slate-800">
+    <div className="min-h-screen bg-slate-100 pb-20 font-sans antialiased text-slate-800">
       {/* Background glow styling */}
-      <div className="absolute top-0 inset-x-0 h-96 bg-gradient-to-b from-indigo-50/50 to-transparent pointer-events-none" />
+      <div className="absolute top-0 inset-x-0 h-96 bg-gradient-to-b from-indigo-100/50 to-transparent pointer-events-none" />
 
       {/* CORE CONTAINER */}
       <main className="relative max-w-xl mx-auto px-4 pt-8">
@@ -669,7 +752,7 @@ export default function Home() {
 
         {/* GOAL CARD VIEW */}
         <section id="campaign-goal-card" className="bg-white border border-slate-100 rounded-3xl overflow-hidden shadow-sm hover:shadow-md transition-all duration-300 mb-6">
-          <div className="relative aspect-[16/9] w-full bg-slate-900 group">
+          <div className="relative aspect-[4/3] sm:aspect-[16/9] w-full bg-slate-900 group">
             <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/20 to-black/30 z-10" />
             <img 
               src={imageUrl}
@@ -684,7 +767,7 @@ export default function Home() {
               </span>
             </div>
             <div className="absolute bottom-4 left-4 right-4 z-20 text-white">
-              <h2 className="text-lg font-bold mt-0.5 tracking-tight line-clamp-1">{title}</h2>
+              <h2 className="text-lg font-bold mt-0.5 tracking-tight">{title}</h2>
               <p className="text-xs text-white/80 line-clamp-2 mt-0.5 font-light">
                 {description}
               </p>
@@ -734,6 +817,45 @@ export default function Home() {
                   </span>
                 )}
               </div>
+
+              {/* COUNTDOWN TIMER */}
+              {isCountdownActive && timeLeft && (
+                <div className="mt-5 bg-slate-50 border border-slate-100 rounded-2xl p-4 flex flex-col items-center justify-center">
+                  <div className="flex items-center gap-1.5 mb-3 text-[10px] uppercase tracking-wider font-bold text-slate-500">
+                    <Clock className="w-3.5 h-3.5" />
+                    Tempo Restante
+                  </div>
+                  <div className="flex items-center gap-3 md:gap-4">
+                    <div className="flex flex-col items-center min-w-[3rem]">
+                      <span className="text-2xl font-black text-indigo-600 tabular-nums leading-none">
+                        {timeLeft.d.toString().padStart(2, '0')}
+                      </span>
+                      <span className="text-[10px] font-semibold text-slate-400 mt-1">Dias</span>
+                    </div>
+                    <span className="text-xl font-black text-slate-200 mb-4">:</span>
+                    <div className="flex flex-col items-center min-w-[3rem]">
+                      <span className="text-2xl font-black text-indigo-600 tabular-nums leading-none">
+                        {timeLeft.h.toString().padStart(2, '0')}
+                      </span>
+                      <span className="text-[10px] font-semibold text-slate-400 mt-1">Horas</span>
+                    </div>
+                    <span className="text-xl font-black text-slate-200 mb-4">:</span>
+                    <div className="flex flex-col items-center min-w-[3rem]">
+                      <span className="text-2xl font-black text-indigo-600 tabular-nums leading-none">
+                        {timeLeft.m.toString().padStart(2, '0')}
+                      </span>
+                      <span className="text-[10px] font-semibold text-slate-400 mt-1">Min</span>
+                    </div>
+                    <span className="text-xl font-black text-slate-200 mb-4">:</span>
+                    <div className="flex flex-col items-center min-w-[3rem]">
+                      <span className="text-2xl font-black text-indigo-600 tabular-nums leading-none">
+                        {timeLeft.s.toString().padStart(2, '0')}
+                      </span>
+                      <span className="text-[10px] font-semibold text-slate-400 mt-1">Seg</span>
+                    </div>
+                  </div>
+                </div>
+              )}
             </div>
 
             {/* PIX AREA */}
@@ -839,6 +961,22 @@ export default function Home() {
                         onChange={(e) => setName(e.target.value)}
                         className="w-full px-4 py-2.5 rounded-xl border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all placeholder:text-slate-400"
                       />
+                      {/* ANONYMOUS DONATION TOGGLE */}
+                      <div className="mt-3 flex items-center justify-between p-3 rounded-xl border border-slate-200 bg-slate-50/50">
+                        <div>
+                          <h4 className="text-xs font-bold text-slate-800">Doação Anônima</h4>
+                          <p className="text-[10px] text-slate-400 mt-0">Ocultar meu nome e comprovante publicamente</p>
+                        </div>
+                        <label className="relative inline-flex items-center cursor-pointer scale-90 origin-right">
+                          <input 
+                            type="checkbox" 
+                            className="sr-only peer" 
+                            checked={isAnonymous}
+                            onChange={(e) => setIsAnonymous(e.target.checked)}
+                          />
+                          <div className="w-11 h-6 bg-slate-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-indigo-600"></div>
+                        </label>
+                      </div>
                     </div>
 
                     <div>
@@ -1052,33 +1190,39 @@ export default function Home() {
           </div>
 
           {/* LIST BOX */}
-          <div className="divide-y divide-slate-105/60 divide-slate-100 max-h-80 overflow-y-auto">
+          <div className="divide-y divide-slate-105/60 divide-slate-100">
             {isLoadingDb ? (
               <div className="p-8 text-center flex flex-col items-center justify-center gap-2">
                 <div className="w-5 h-5 border-2 border-indigo-600 border-t-transparent rounded-full animate-spin" />
                 <p className="text-xs text-slate-400">Buscando doações no Supabase...</p>
               </div>
             ) : filteredDonors.length > 0 ? (
-              [...filteredDonors].reverse().map((donor, idx) => (
+              [...filteredDonors].reverse().map((donor, idx) => {
+                const isHidden = donor.is_anonymous && !isAdmin;
+                const showReceipt = donor.receipt_url && !isHidden;
+                const canClick = showReceipt || isAdmin;
+                
+                return (
               <div 
                   key={donor.id}
-                  onClick={() => { if (donor.receipt_url) { setActiveReceiptUrl(donor.receipt_url); setActiveReceiptDonorId(donor.id); } }}
-                  className={`p-4 flex items-center justify-between transition-colors group ${donor.receipt_url ? 'cursor-pointer hover:bg-indigo-50/40' : 'hover:bg-slate-50/40'}`}
+                  onClick={() => { if (canClick) { setActiveReceiptUrl(donor.receipt_url || 'upload'); setActiveReceiptDonorId(donor.id); } }}
+                  className={`p-4 flex items-center justify-between transition-colors group ${canClick ? 'cursor-pointer hover:bg-indigo-50/40' : 'hover:bg-slate-50/40'}`}
                 >
                   <div className="flex items-center gap-3">
                     {/* Avatar: thumbnail if has receipt, else initials */}
-                    <div className={`w-10 h-10 rounded-full border-2 overflow-hidden flex items-center justify-center text-xs font-bold leading-none shrink-0 relative ${donor.receipt_url ? 'border-indigo-400/60' : getAvatarStyle(idx)}`}>
-                      {donor.receipt_url ? (
+                    <div className={`w-10 h-10 rounded-full border-2 overflow-hidden flex items-center justify-center text-xs font-bold leading-none shrink-0 relative ${showReceipt ? 'border-indigo-400/60' : getAvatarStyle(idx)}`}>
+                      {showReceipt ? (
                         <div className="absolute inset-0 bg-gradient-to-br from-indigo-500 to-indigo-700 flex items-center justify-center">
                           <Eye className="w-4 h-4 text-white" />
                         </div>
                       ) : (
-                        getInitials(donor.name)
+                        getInitials(isHidden ? 'Anônimo' : donor.name)
                       )}
                     </div>
                     <div>
                       <h4 className="text-sm font-extrabold text-slate-900 line-clamp-1 uppercase tracking-wide">
-                        {donor.name}
+                        {isHidden ? 'Doador Anônimo' : donor.name}
+                        {donor.is_anonymous && isAdmin && <span className="ml-2 text-[9px] font-bold text-rose-500 bg-rose-50 px-1.5 py-0.5 rounded-md border border-rose-100">Oculto</span>}
                       </h4>
                       <p className="text-[10px] text-slate-400 font-medium">
                         Doador nº {idx + 1} • {donor.date ? donor.date.split('-').reverse().join('/') : ''}
@@ -1092,7 +1236,8 @@ export default function Home() {
                     </span>
                   </div>
                 </div>
-              ))
+                );
+              })
             ) : (
               <div className="p-8 text-center text-slate-400 flex flex-col items-center justify-center">
                 <Heart className="w-8 h-8 stroke-[1.5] text-slate-300 mb-2" />
@@ -1155,14 +1300,16 @@ export default function Home() {
         <footer className="mt-8 pb-8 text-center text-[10px] text-slate-400 font-medium space-y-5">
           <div className="flex flex-wrap justify-center gap-2">
             {/* Admin control panel link — discrete */}
-            <Link 
-              href="/admin" 
-              className="inline-flex items-center gap-1.5 px-3 py-1 bg-transparent hover:bg-slate-100 border border-slate-200/40 text-slate-400 hover:text-slate-500 rounded-full text-xs font-medium transition-all duration-200"
-              title="Ir para o Painel Administrativo"
-            >
-              <Settings className="w-3 h-3" />
-              Admin
-            </Link>
+            {isAdmin && (
+              <Link 
+                href="/admin" 
+                className="inline-flex items-center gap-1.5 px-3 py-1 bg-transparent hover:bg-slate-100 border border-slate-200/40 text-slate-400 hover:text-slate-500 rounded-full text-xs font-medium transition-all duration-200"
+                title="Ir para o Painel Administrativo"
+              >
+                <Settings className="w-3 h-3" />
+                Admin
+              </Link>
+            )}
           </div>
 
           <div className="space-y-1">
@@ -1174,13 +1321,13 @@ export default function Home() {
 
       {/* COMPROVANTE VIEWER MODAL DIALOG */}
       <AnimatePresence>
-        {activeReceiptUrl && (
+        {activeReceiptDonorId && activeReceiptUrl && (
           <motion.div 
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             className="fixed inset-0 z-50 bg-slate-900/70 backdrop-blur-sm flex items-end sm:items-center justify-center p-0 sm:p-4"
-            onClick={() => setActiveReceiptUrl(null)}
+            onClick={() => { setActiveReceiptUrl(null); setActiveReceiptDonorId(null); }}
           >
             <motion.div 
               initial={{ scale: 0.95 }}
@@ -1190,7 +1337,7 @@ export default function Home() {
               onClick={(e) => e.stopPropagation()}
             >
               <button 
-                onClick={() => setActiveReceiptUrl(null)}
+                onClick={() => { setActiveReceiptUrl(null); setActiveReceiptDonorId(null); }}
                 className="absolute top-4 right-4 p-1.5 rounded-lg text-slate-400 hover:text-slate-600 hover:bg-slate-50 transition-colors"
               >
                 <X className="w-4 h-4" />
@@ -1198,15 +1345,37 @@ export default function Home() {
 
               <div className="flex items-center gap-2 mb-4">
                 <div className="p-2 rounded-lg bg-indigo-50 text-indigo-500">
-                  <FileText className="w-5 h-5" />
+                  {activeReceiptUrl === 'upload' ? <UploadCloud className="w-5 h-5" /> : <FileText className="w-5 h-5" />}
                 </div>
                 <div>
-                  <h3 className="font-bold text-slate-800 text-sm">Visualizar Comprovante</h3>
-                  <p className="text-[10px] text-slate-400">Anexo validado do doador</p>
+                  <h3 className="font-bold text-slate-800 text-sm">
+                    {activeReceiptUrl === 'upload' ? 'Anexar Comprovante' : 'Visualizar Comprovante'}
+                  </h3>
+                  <p className="text-[10px] text-slate-400">
+                    {activeReceiptUrl === 'upload' ? 'Doação registrada sem comprovante' : 'Anexo validado do doador'}
+                  </p>
                 </div>
               </div>
 
-              {activeReceiptUrl.startsWith('data:application/pdf') || activeReceiptUrl.endsWith('.pdf') ? (
+              {activeReceiptUrl === 'upload' ? (
+                <div className="bg-slate-50 border border-dashed border-slate-200 rounded-2xl p-8 flex flex-col items-center justify-center text-center gap-3">
+                  <UploadCloud className="w-12 h-12 text-indigo-300" />
+                  <div>
+                    <p className="text-xs font-bold text-slate-700">Comprovante Pendente</p>
+                    <p className="text-[10px] text-slate-400">Esta doação não possui anexo de comprovante.</p>
+                  </div>
+                  <label className="mt-2 text-xs font-bold text-indigo-600 bg-indigo-50 hover:bg-indigo-100 px-4 py-2 rounded-xl flex items-center gap-1 cursor-pointer transition-colors border border-indigo-100/50">
+                    <input 
+                      type="file" 
+                      className="hidden" 
+                      accept="image/*,application/pdf" 
+                      onChange={handleUploadMissingReceipt} 
+                      disabled={isUploading} 
+                    />
+                    {isUploading ? 'Enviando...' : 'Fazer Upload agora'}
+                  </label>
+                </div>
+              ) : activeReceiptUrl.startsWith('data:application/pdf') || activeReceiptUrl.endsWith('.pdf') ? (
                 <div className="bg-slate-50 border rounded-2xl p-8 flex flex-col items-center justify-center text-center gap-3">
                   <FileText className="w-12 h-12 text-indigo-400" />
                   <div>

@@ -31,6 +31,9 @@ export default function Admin() {
   const [pixKey, setPixKey] = useState<string>('');
   const [pixHolder, setPixHolder] = useState<string>('');
   const [pixBank, setPixBank] = useState<string>('');
+
+  const [isCountdownActive, setIsCountdownActive] = useState<boolean>(false);
+  const [countdownDeadline, setCountdownDeadline] = useState<string>('');
   
   // Storage bucket upload state
   const [coverFile, setCoverFile] = useState<File | null>(null);
@@ -54,6 +57,8 @@ export default function Admin() {
     const savedPixKey = localStorage.getItem('campaign_pix_key');
     const savedPixHolder = localStorage.getItem('campaign_pix_holder');
     const savedPixBank = localStorage.getItem('campaign_pix_bank');
+    const savedCountdownActive = localStorage.getItem('campaign_is_countdown_active');
+    const savedCountdownDeadline = localStorage.getItem('campaign_countdown_deadline');
 
     if (savedTitle) setTitle(savedTitle);
     if (savedDesc) setDescription(savedDesc);
@@ -62,6 +67,8 @@ export default function Admin() {
     if (savedPixKey) setPixKey(savedPixKey);
     if (savedPixHolder) setPixHolder(savedPixHolder);
     if (savedPixBank) setPixBank(savedPixBank);
+    if (savedCountdownActive) setIsCountdownActive(savedCountdownActive === 'true');
+    if (savedCountdownDeadline) setCountdownDeadline(savedCountdownDeadline);
   };
 
   const fetchCampaignConfig = async (supabase: any) => {
@@ -85,6 +92,17 @@ export default function Admin() {
         setPixKey(data.pix_key || '');
         setPixHolder(data.pix_holder || '');
         setPixBank(data.pix_bank || '');
+        
+        // Supabase might return null or undefined, default carefully
+        setIsCountdownActive(data.is_countdown_active || false);
+        if (data.countdown_deadline) {
+          // Format from '2026-06-30T23:59:00+00:00' to '2026-06-30T23:59' for datetime-local
+          const date = new Date(data.countdown_deadline);
+          if (!isNaN(date.getTime())) {
+            // Convert back to local ISO string slice for input
+            setCountdownDeadline(new Date(date.getTime() - date.getTimezoneOffset() * 60000).toISOString().slice(0, 16));
+          }
+        }
       }
     } catch (err: any) {
       console.warn('Could not load campaign config from Supabase, loading local:', err.message);
@@ -229,7 +247,9 @@ export default function Admin() {
           image_url: finalImageUrl,
           pix_key: pixKey.trim(),
           pix_holder: pixHolder.trim(),
-          pix_bank: pixBank.trim()
+          pix_bank: pixBank.trim(),
+          is_countdown_active: isCountdownActive,
+          countdown_deadline: countdownDeadline ? new Date(countdownDeadline).toISOString() : null
         };
 
         const { error } = await supabase
@@ -248,6 +268,8 @@ export default function Admin() {
         localStorage.setItem('campaign_pix_key', pixKey.trim());
         localStorage.setItem('campaign_pix_holder', pixHolder.trim());
         localStorage.setItem('campaign_pix_bank', pixBank.trim());
+        localStorage.setItem('campaign_is_countdown_active', isCountdownActive.toString());
+        if (countdownDeadline) localStorage.setItem('campaign_countdown_deadline', countdownDeadline);
 
         setSuccessMsg('Configurações atualizadas na nuvem com sucesso!');
         setCoverFile(null);
@@ -260,8 +282,10 @@ export default function Admin() {
         localStorage.setItem('campaign_pix_key', pixKey.trim());
         localStorage.setItem('campaign_pix_holder', pixHolder.trim());
         localStorage.setItem('campaign_pix_bank', pixBank.trim());
-        
-        setSuccessMsg('Configurações salvas localmente!');
+        localStorage.setItem('campaign_is_countdown_active', isCountdownActive.toString());
+        if (countdownDeadline) localStorage.setItem('campaign_countdown_deadline', countdownDeadline);
+
+        setSuccessMsg('Configurações salvas localmente com sucesso!');
         setCoverFile(null);
         setCoverPreview(null);
       }
@@ -423,6 +447,42 @@ export default function Admin() {
                   </div>
                 </div>
 
+                {/* COUNTDOWN SETTINGS */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 bg-slate-50 border border-slate-100 rounded-2xl p-4">
+                  <div className="flex flex-col justify-center">
+                    <label className="block text-xs font-bold text-slate-800 mb-1">
+                      Temporizador Regressivo
+                    </label>
+                    <p className="text-[10px] text-slate-400 mb-3">Ative para mostrar uma contagem na página principal.</p>
+                    
+                    <label className="relative inline-flex items-center cursor-pointer">
+                      <input 
+                        type="checkbox" 
+                        className="sr-only peer" 
+                        checked={isCountdownActive}
+                        onChange={(e) => setIsCountdownActive(e.target.checked)}
+                      />
+                      <div className="w-11 h-6 bg-slate-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-indigo-600"></div>
+                      <span className="ml-3 text-xs font-bold text-slate-700">
+                        {isCountdownActive ? 'Ativado' : 'Desativado'}
+                      </span>
+                    </label>
+                  </div>
+                  <div>
+                    <label htmlFor="config-countdown" className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1.5">
+                      Data e Hora Limite
+                    </label>
+                    <input 
+                      id="config-countdown"
+                      type="datetime-local"
+                      disabled={!isCountdownActive}
+                      value={countdownDeadline}
+                      onChange={(e) => setCountdownDeadline(e.target.value)}
+                      className="w-full px-4 py-2.5 rounded-xl border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all font-semibold disabled:bg-slate-100 disabled:text-slate-400"
+                    />
+                  </div>
+                </div>
+
                 {/* Cover File Upload Uploader */}
                 <div>
                   <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1.5">
@@ -546,6 +606,17 @@ export default function Admin() {
             </section>
           </div>
         )}
+
+        {/* ADMIN FOOTER */}
+        <footer className="mt-8 pb-8 text-center flex justify-center">
+          <Link 
+            href="/" 
+            className="inline-flex items-center gap-2 px-4 py-2 bg-transparent hover:bg-slate-100 border border-slate-200/60 text-slate-500 hover:text-slate-700 rounded-full text-xs font-bold transition-all"
+          >
+            <ArrowLeft className="w-3.5 h-3.5" />
+            Voltar para a Vaquinha
+          </Link>
+        </footer>
       </main>
     </div>
   );
