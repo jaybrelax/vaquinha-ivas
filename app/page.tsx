@@ -412,8 +412,8 @@ export default function Home() {
           throw error;
         }
 
-        // Refetch to align exact schema ID
-        await fetchSupabaseDonations();
+        // Realtime subscription already adds the new donor to the list automatically.
+        // No need to refetch - avoids race conditions.
       } else {
         // Fallback local list modification
         const newDonor: Donor = {
@@ -426,12 +426,13 @@ export default function Home() {
         setDonors([newDonor, ...donors]);
       }
 
-      // Success cleanup
+      // Success cleanup — reset form state before closing modal
       setName('');
       setAmountStr('');
       setReceiptFile(null);
       setReceiptPreview(null);
-      setIsFormOpen(false); // Close matching user requests
+      setFormError('');
+      setIsFormOpen(false);
 
     } catch (err: any) {
       console.error('Error adding donation:', err);
