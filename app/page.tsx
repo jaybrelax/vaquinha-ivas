@@ -1036,7 +1036,7 @@ export default function Home() {
                 <p className="text-xs text-slate-400">Buscando doações no Supabase...</p>
               </div>
             ) : filteredDonors.length > 0 ? (
-              filteredDonors.map((donor, idx) => (
+              [...filteredDonors].reverse().map((donor, idx) => (
                 <div 
                   key={donor.id}
                   className="p-4 flex items-center justify-between hover:bg-slate-50/40 transition-colors group"
