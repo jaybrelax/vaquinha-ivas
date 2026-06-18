@@ -656,7 +656,7 @@ export default function Home() {
   };
 
   return (
-    <div className="min-h-screen bg-slate-100 pb-20 font-sans antialiased text-slate-800">
+    <div className="min-h-screen bg-slate-200 pb-20 font-sans antialiased text-slate-800">
       {/* Background glow styling */}
       <div className="absolute top-0 inset-x-0 h-96 bg-gradient-to-b from-indigo-100/50 to-transparent pointer-events-none" />
 
@@ -788,7 +788,7 @@ export default function Home() {
 
         {/* GOAL CARD VIEW */}
         <section id="campaign-goal-card" className="bg-white border border-slate-100 rounded-3xl overflow-hidden shadow-sm hover:shadow-md transition-all duration-300 mb-6">
-          <div className="relative aspect-[4/3] sm:aspect-[16/9] w-full bg-slate-900 group">
+          <div className="relative aspect-[5/3] sm:aspect-[2/1] w-full bg-slate-900 group">
             <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/20 to-black/30 z-10" />
             <img
               src={imageUrl}
@@ -856,39 +856,33 @@ export default function Home() {
 
               {/* COUNTDOWN TIMER */}
               {isCountdownActive && timeLeft && (
-                <div className="mt-5 bg-slate-50/80 backdrop-blur-sm border border-slate-100/50 rounded-2xl p-4 flex flex-col items-center justify-center animate-countdown-glow">
-                  <div className="flex items-center gap-1.5 mb-3 text-[10px] uppercase tracking-wider font-bold text-slate-500">
-                    <Clock className="w-3.5 h-3.5" />
-                    Tempo Restante
+                <div className="flex items-center justify-center gap-3 md:gap-4 mt-5">
+                  <div className="flex flex-col items-center min-w-[3rem]">
+                    <span className="text-2xl font-black theme-text tabular-nums leading-none">
+                      {timeLeft.d.toString().padStart(2, '0')}
+                    </span>
+                    <span className="text-[10px] font-semibold text-slate-400 mt-1">Dias</span>
                   </div>
-                  <div className="flex items-center gap-3 md:gap-4">
-                    <div className="flex flex-col items-center min-w-[3rem]">
-                      <span className="text-2xl font-black theme-text tabular-nums leading-none">
-                        {timeLeft.d.toString().padStart(2, '0')}
-                      </span>
-                      <span className="text-[10px] font-semibold text-slate-400 mt-1">Dias</span>
-                    </div>
-                    <span className="text-xl font-black text-slate-200 mb-4">:</span>
-                    <div className="flex flex-col items-center min-w-[3rem]">
-                      <span className="text-2xl font-black theme-text tabular-nums leading-none">
-                        {timeLeft.h.toString().padStart(2, '0')}
-                      </span>
-                      <span className="text-[10px] font-semibold text-slate-400 mt-1">Horas</span>
-                    </div>
-                    <span className="text-xl font-black text-slate-200 mb-4">:</span>
-                    <div className="flex flex-col items-center min-w-[3rem]">
-                      <span className="text-2xl font-black theme-text tabular-nums leading-none">
-                        {timeLeft.m.toString().padStart(2, '0')}
-                      </span>
-                      <span className="text-[10px] font-semibold text-slate-400 mt-1">Min</span>
-                    </div>
-                    <span className="text-xl font-black text-slate-200 mb-4">:</span>
-                    <div className="flex flex-col items-center min-w-[3rem]">
-                      <span className="text-2xl font-black theme-text tabular-nums leading-none">
-                        {timeLeft.s.toString().padStart(2, '0')}
-                      </span>
-                      <span className="text-[10px] font-semibold text-slate-400 mt-1">Seg</span>
-                    </div>
+                  <span className="text-xl font-black theme-text animate-blink mb-4">:</span>
+                  <div className="flex flex-col items-center min-w-[3rem]">
+                    <span className="text-2xl font-black theme-text tabular-nums leading-none">
+                      {timeLeft.h.toString().padStart(2, '0')}
+                    </span>
+                    <span className="text-[10px] font-semibold text-slate-400 mt-1">Horas</span>
+                  </div>
+                  <span className="text-xl font-black theme-text animate-blink mb-4">:</span>
+                  <div className="flex flex-col items-center min-w-[3rem]">
+                    <span className="text-2xl font-black theme-text tabular-nums leading-none">
+                      {timeLeft.m.toString().padStart(2, '0')}
+                    </span>
+                    <span className="text-[10px] font-semibold text-slate-400 mt-1">Min</span>
+                  </div>
+                  <span className="text-xl font-black theme-text animate-blink mb-4">:</span>
+                  <div className="flex flex-col items-center min-w-[3rem]">
+                    <span className="text-2xl font-black theme-text tabular-nums leading-none">
+                      {timeLeft.s.toString().padStart(2, '0')}
+                    </span>
+                    <span className="text-[10px] font-semibold text-slate-400 mt-1">Seg</span>
                   </div>
                 </div>
               )}
@@ -897,7 +891,7 @@ export default function Home() {
             {/* PIX AREA */}
             {pixKey && (
               <div className="mt-6 pt-5 border-t border-slate-100">
-                <div className="bg-emerald-50/60 border border-emerald-200/60 rounded-2xl shadow-sm hover:shadow-md hover:shadow-emerald-600/5 transition-shadow p-5">
+                <div className="bg-purple-50/60 border border-purple-200/60 rounded-2xl shadow-sm hover:shadow-md hover:shadow-purple-600/5 transition-shadow p-5">
                   <div className="flex items-center justify-between gap-4">
                     <div className="min-w-0 flex-1">
                       <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">Titular</p>
@@ -952,8 +946,8 @@ export default function Home() {
                           copyToClipboard(pixKey);
                         }}
                         className={`flex items-center gap-2 px-5 py-2.5 rounded-xl font-bold text-sm transition-all shadow-sm ${isCopied
-                            ? 'bg-emerald-600 text-white border border-emerald-700/20 shadow-md shadow-emerald-600/20'
-                            : 'bg-emerald-500 hover:bg-emerald-600 text-white border border-emerald-600/20 hover:shadow-md hover:shadow-emerald-600/20'
+                            ? 'bg-purple-600 text-white border border-purple-700/20 shadow-md shadow-purple-600/20'
+                            : 'bg-purple-500 hover:bg-purple-600 text-white border border-purple-600/20 hover:shadow-md hover:shadow-purple-600/20'
                           }`}
                       >
                         {isCopied ? <CheckCircle className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
@@ -975,7 +969,7 @@ export default function Home() {
             onClick={() => setIsFormOpen(!isFormOpen)}
             className={`w-full py-4 px-4 rounded-2xl text-base font-bold shadow-sm transition-all duration-300 flex items-center justify-center gap-2 cursor-pointer ${isFormOpen
                 ? 'bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-250/30'
-                : 'bg-emerald-600 hover:bg-emerald-700 text-white shadow-md shadow-emerald-600/15 active:scale-[0.99]'
+                : 'theme-btn shadow-md active:scale-[0.99]'
               }`}
           >
             {isFormOpen ? (
