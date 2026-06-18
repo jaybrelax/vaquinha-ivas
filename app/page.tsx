@@ -796,8 +796,8 @@ export default function Home() {
               referrerPolicy="no-referrer"
               className="absolute inset-0 w-full h-full object-cover select-none transition-transform duration-700 group-hover:scale-105"
             />
-            <div className="absolute top-3 right-3 z-20">
-              <span className="theme-btn inline-flex items-center gap-1.5 px-3 py-1 shadow-lg backdrop-blur-md rounded-full text-xs font-medium border border-white/20">
+            <div className="absolute top-3 left-3 z-20">
+              <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium bg-white/10 backdrop-blur-xl border border-white/25 shadow-lg text-white/90">
                 <Mic className="w-3 h-3 text-white/70" />
                 Campanha Ativa
               </span>
