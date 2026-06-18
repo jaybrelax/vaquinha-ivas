@@ -1052,10 +1052,10 @@ export default function Home() {
                         placeholder="Ex: Mariana Silva"
                         value={name}
                         onChange={(e) => setName(e.target.value)}
-                        className="w-full px-4 py-2.5 rounded-xl border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all placeholder:text-slate-400"
+                        className="w-full px-4 py-2.5 rounded-xl border-2 border-slate-300 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all placeholder:text-slate-400"
                       />
                       {/* ANONYMOUS DONATION TOGGLE */}
-                      <div className="mt-3 flex items-center justify-between p-3 rounded-xl border border-slate-200 bg-slate-50/50">
+                      <div className="mt-3 flex items-center justify-between p-3 rounded-xl border-2 border-slate-300 bg-slate-50">
                         <div>
                           <h4 className="text-xs font-bold text-slate-800">Doação Anônima</h4>
                           <p className="text-[10px] text-slate-400 mt-0">Ocultar meu nome e comprovante publicamente</p>
@@ -1087,31 +1087,24 @@ export default function Home() {
                           placeholder="Ex: 50,00"
                           value={amountStr}
                           onChange={handleAmountChange}
-                          className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all placeholder:text-slate-300"
+                          className="w-full pl-10 pr-4 py-2.5 rounded-xl border-2 border-slate-300 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all placeholder:text-slate-300"
                         />
                       </div>
-                    </div>
-                  </div>
-
-                  {/* SUGGESTED PRESETS */}
-                  <div>
-                    <span className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1.5">
-                      Sugestões Rápidas de Doação
-                    </span>
-                    <div className="grid grid-cols-4 gap-2">
-                      {[11, 22, 33, 44].map((val) => (
-                        <button
-                          key={val}
-                          type="button"
-                          onClick={() => handleQuickDonate(val)}
-                          className={`py-1.5 rounded-xl border text-xs font-bold transition-all duration-200 ${amountStr === val.toString()
-                              ? 'theme-btn border-transparent shadow-sm'
-                              : 'bg-slate-50/50 hover:bg-slate-100 text-slate-600 border-slate-200 cursor-pointer'
-                            }`}
-                        >
-                          R$ {val}
-                        </button>
-                      ))}
+                      <div className="grid grid-cols-3 gap-2 mt-2">
+                        {[11, 22, 33].map((val) => (
+                          <button
+                            key={val}
+                            type="button"
+                            onClick={() => handleQuickDonate(val)}
+                            className={`py-2 rounded-xl border-2 text-xs font-bold transition-all duration-200 ${amountStr === val.toString()
+                                ? 'theme-btn border-transparent shadow-sm'
+                                : 'bg-slate-100 hover:bg-slate-200 text-slate-700 border-slate-300 cursor-pointer'
+                              }`}
+                          >
+                            R$ {val}
+                          </button>
+                        ))}
+                      </div>
                     </div>
                   </div>
 
