@@ -96,6 +96,7 @@ export default function Home() {
   const [receiptFile, setReceiptFile] = useState<File | null>(null);
   const [receiptPreview, setReceiptPreview] = useState<string | null>(null);
   const [isUploading, setIsUploading] = useState<boolean>(false);
+  const [noReceiptConfirmed, setNoReceiptConfirmed] = useState<boolean>(false);
   const [isDragOver, setIsDragOver] = useState<boolean>(false);
   const [isAdmin, setIsAdmin] = useState<boolean>(false);
   const [isAnonymous, setIsAnonymous] = useState<boolean>(false);
@@ -368,6 +369,7 @@ export default function Home() {
     }
 
     setFormError('');
+    setNoReceiptConfirmed(false);
     setReceiptFile(file);
 
     // Create dynamic local preview
@@ -457,6 +459,11 @@ export default function Home() {
 
     if (isNaN(parsedAmount) || parsedAmount <= 0) {
       setFormError('Por favor, insira um valor de doação válido maior que zero.');
+      return;
+    }
+
+    if (!receiptFile && !noReceiptConfirmed) {
+      setFormError('Anexe o comprovante ou marque a opção abaixo.');
       return;
     }
 
@@ -843,7 +850,7 @@ export default function Home() {
                 </span>
 
                 {remaining > 0 ? (
-                  <span className="theme-badge px-2 py-0.5 rounded-md font-medium">
+                  <span className="text-slate-500 font-medium">
                     Faltam {formatCurrency(remaining)}
                   </span>
                 ) : (
@@ -856,7 +863,9 @@ export default function Home() {
 
               {/* COUNTDOWN TIMER */}
               {isCountdownActive && timeLeft && (
-                <div className="flex items-center justify-center gap-3 md:gap-4 mt-5">
+                <div className="text-center mt-5">
+                <p className="text-xs font-semibold text-slate-500 mb-2">Tempo restante para encerrar a campanha:</p>
+                <div className="flex items-center justify-center gap-3 md:gap-4">
                   <div className="flex flex-col items-center min-w-[3rem]">
                     <span className="text-2xl font-black theme-text tabular-nums leading-none">
                       {timeLeft.d.toString().padStart(2, '0')}
@@ -885,14 +894,23 @@ export default function Home() {
                     <span className="text-[10px] font-semibold text-slate-400 mt-1">Seg</span>
                   </div>
                 </div>
+              </div>
               )}
             </div>
 
             {/* PIX AREA */}
             {pixKey && (
               <div className="mt-6 pt-5 border-t border-slate-100">
-                <div className="bg-purple-50/60 border border-purple-200/60 rounded-2xl shadow-sm hover:shadow-md hover:shadow-purple-600/5 transition-shadow p-5">
-                  <div className="flex items-center justify-between gap-4">
+                <div className="relative border border-purple-200/60 rounded-2xl shadow-sm hover:shadow-md hover:shadow-purple-600/5 transition-shadow">
+                  <div className="absolute inset-0 rounded-2xl overflow-hidden z-0">
+                    <div className="absolute inset-0 opacity-40 bg-[url('/pix_logo.png')] bg-no-repeat bg-[position:calc(-30%+30px)_calc(110%+15px)] bg-contain" />
+                  </div>
+                  <div className="absolute inset-0 rounded-2xl bg-purple-50/60 z-[1]" />
+                  <div className="absolute -top-3 left-1/2 -translate-x-1/2 bg-purple-50 border border-purple-200/60 rounded-full px-4 py-0.5 text-xs font-bold text-purple-700 z-20 shadow-sm uppercase">
+                    Chave Pix
+                  </div>
+                  <div className="relative z-10 p-5 pt-6">
+                    <div className="flex items-center justify-between gap-4">
                     <div className="min-w-0 flex-1">
                       <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">Titular</p>
                       <p className="text-sm font-extrabold text-slate-800 truncate">
@@ -902,7 +920,7 @@ export default function Home() {
                         <p className="text-xs text-slate-500 mt-0.5 truncate">{pixBank}</p>
                       )}
                     </div>
-                    <div className="shrink-0">
+                    <div className="shrink-0 relative z-20">
                       <button
                         onClick={() => {
                           const copyToClipboard = (text: string) => {
@@ -951,12 +969,13 @@ export default function Home() {
                           }`}
                       >
                         {isCopied ? <CheckCircle className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
-                        {isCopied ? 'Copiada!' : 'Copiar Pix'}
+                        {isCopied ? 'COPIADA!' : 'COPIAR CHAVE'}
                       </button>
                     </div>
                   </div>
                 </div>
               </div>
+            </div>
             )}
 
 
@@ -1079,8 +1098,8 @@ export default function Home() {
                     <span className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1.5">
                       Sugestões Rápidas de Doação
                     </span>
-                    <div className="grid grid-cols-5 gap-2">
-                      {[10, 20, 30, 50, 80].map((val) => (
+                    <div className="grid grid-cols-4 gap-2">
+                      {[11, 22, 33, 44].map((val) => (
                         <button
                           key={val}
                           type="button"
@@ -1183,10 +1202,22 @@ export default function Home() {
                     </p>
                   )}
 
+                  {!receiptFile && formError?.includes('comprovante') && (
+                    <label className="flex items-center gap-2 p-3 rounded-xl border border-slate-200 bg-slate-50/50 cursor-pointer">
+                      <input
+                        type="checkbox"
+                        checked={noReceiptConfirmed}
+                        onChange={(e) => setNoReceiptConfirmed(e.target.checked)}
+                        className="w-4 h-4 rounded border-slate-300 text-indigo-600 focus:ring-indigo-500"
+                      />
+                      <span className="text-xs font-medium text-slate-600">Não tenho o comprovante agora</span>
+                    </label>
+                  )}
+
                   <button
                     type="submit"
                     disabled={isUploading}
-                    className="bg-emerald-600 hover:bg-emerald-700 text-white w-full py-2.5 px-4 rounded-xl text-sm font-bold shadow-md shadow-emerald-600/10 active:scale-[0.98] transition-all duration-200 flex items-center justify-center gap-1.5 cursor-pointer disabled:cursor-not-allowed"
+                    className="bg-black hover:bg-slate-800 text-white w-full py-3.5 px-4 rounded-xl text-sm font-bold uppercase tracking-wider shadow-md active:scale-[0.98] transition-all duration-200 flex items-center justify-center gap-1.5 cursor-pointer disabled:cursor-not-allowed"
                   >
                     {isUploading ? (
                       <>
