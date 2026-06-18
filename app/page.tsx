@@ -815,7 +815,7 @@ export default function Home() {
               <div className="flex justify-between items-end mb-2">
                 <div className="flex flex-col">
                   <span className="text-[10px] uppercase tracking-wider font-bold text-slate-400">Total Arrecadado</span>
-                  <p className="text-2xl font-black theme-text">
+                  <p className="text-2xl font-black text-emerald-600">
                     {formatCurrency(totalRaised)}
                   </p>
                 </div>
@@ -830,7 +830,7 @@ export default function Home() {
               {/* Progress visual fill bar */}
               <div className="w-full bg-slate-150 h-3 rounded-full overflow-hidden relative border border-slate-200/40 bg-slate-100">
                 <div
-                  className="theme-progress h-full rounded-full transition-all duration-500 ease-out relative"
+                  className="bg-emerald-500 h-full rounded-full transition-all duration-500 ease-out relative"
                   style={{ width: `${progressPercent}%` }}
                 >
                   <div className="absolute top-0 right-0 bottom-0 w-1.5 bg-white/20 animate-pulse" />
@@ -896,24 +896,71 @@ export default function Home() {
 
             {/* PIX AREA */}
             {pixKey && (
-              <div className="mt-6 pt-5 border-t border-slate-100 flex flex-col items-center">
-                <button
-                  onClick={() => {
-                    navigator.clipboard.writeText(pixKey);
-                    setIsCopied(true);
-                    setTimeout(() => setIsCopied(false), 2000);
-                  }}
-                  className={`flex items-center gap-2 px-5 py-2.5 rounded-xl font-bold transition-all ${isCopied
-                      ? 'bg-emerald-600 text-white border border-emerald-700/20 shadow-md shadow-emerald-600/20'
-                      : 'bg-emerald-50 hover:bg-emerald-100 text-emerald-700 border border-emerald-200/60'
-                    }`}
-                >
-                  {isCopied ? <CheckCircle className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
-                  {isCopied ? 'Chave copiada! ✅' : 'Copiar chave Pix'}
-                </button>
-                <div className="text-center mt-3">
-                  {pixHolder && <p className="text-[11px] font-bold text-slate-600 uppercase tracking-wide">{pixHolder}</p>}
-                  {pixBank && <p className="text-[10px] font-medium text-slate-400">{pixBank}</p>}
+              <div className="mt-6 pt-5 border-t border-slate-100">
+                <div className="bg-emerald-50/60 border border-emerald-200/60 rounded-2xl shadow-sm hover:shadow-md hover:shadow-emerald-600/5 transition-shadow p-5">
+                  <div className="flex items-center justify-between gap-4">
+                    <div className="min-w-0 flex-1">
+                      <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">Titular</p>
+                      <p className="text-sm font-extrabold text-slate-800 truncate">
+                        {pixHolder || '---'}
+                      </p>
+                      {pixBank && (
+                        <p className="text-xs text-slate-500 mt-0.5 truncate">{pixBank}</p>
+                      )}
+                    </div>
+                    <div className="shrink-0">
+                      <button
+                        onClick={() => {
+                          const copyToClipboard = (text: string) => {
+                            if (navigator.clipboard && navigator.clipboard.writeText) {
+                              navigator.clipboard.writeText(text).then(() => {
+                                setIsCopied(true);
+                                setTimeout(() => setIsCopied(false), 2000);
+                              }).catch(() => {
+                                fallbackCopy(text);
+                              });
+                            } else {
+                              fallbackCopy(text);
+                            }
+                          };
+
+                          const fallbackCopy = (text: string) => {
+                            const textArea = document.createElement("textarea");
+                            textArea.value = text;
+                            textArea.style.position = "fixed";
+                            textArea.style.top = "0";
+                            textArea.style.left = "0";
+                            textArea.style.opacity = "0";
+                            document.body.appendChild(textArea);
+                            textArea.focus();
+                            textArea.select();
+                            try {
+                              const successful = document.execCommand('copy');
+                              if (successful) {
+                                setIsCopied(true);
+                                setTimeout(() => setIsCopied(false), 2000);
+                              } else {
+                                setIsCopied(false);
+                              }
+                            } catch (err) {
+                              console.error('Fallback copy failed', err);
+                              setIsCopied(false);
+                            }
+                            document.body.removeChild(textArea);
+                          };
+
+                          copyToClipboard(pixKey);
+                        }}
+                        className={`flex items-center gap-2 px-5 py-2.5 rounded-xl font-bold text-sm transition-all shadow-sm ${isCopied
+                            ? 'bg-emerald-600 text-white border border-emerald-700/20 shadow-md shadow-emerald-600/20'
+                            : 'bg-emerald-500 hover:bg-emerald-600 text-white border border-emerald-600/20 hover:shadow-md hover:shadow-emerald-600/20'
+                          }`}
+                      >
+                        {isCopied ? <CheckCircle className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
+                        {isCopied ? 'Copiada!' : 'Copiar Pix'}
+                      </button>
+                    </div>
+                  </div>
                 </div>
               </div>
             )}
@@ -922,14 +969,13 @@ export default function Home() {
           </div>
         </section>
 
-        {/* BTN ACCORDION: TO RE-ARRANGE BUTTON DIRECTLY ABOVE HISTORY LIST */}
         <div id="action-trigger-area" ref={addButtonRef} className="mb-4">
           <button
             type="button"
             onClick={() => setIsFormOpen(!isFormOpen)}
             className={`w-full py-4 px-4 rounded-2xl text-base font-bold shadow-sm transition-all duration-300 flex items-center justify-center gap-2 cursor-pointer ${isFormOpen
                 ? 'bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-250/30'
-                : 'theme-btn shadow-md active:scale-[0.99]'
+                : 'bg-emerald-600 hover:bg-emerald-700 text-white shadow-md shadow-emerald-600/15 active:scale-[0.99]'
               }`}
           >
             {isFormOpen ? (
@@ -1146,7 +1192,7 @@ export default function Home() {
                   <button
                     type="submit"
                     disabled={isUploading}
-                    className="theme-btn w-full py-2.5 px-4 rounded-xl text-sm font-bold shadow-md active:scale-[0.98] transition-all duration-200 flex items-center justify-center gap-1.5 cursor-pointer disabled:cursor-not-allowed"
+                    className="bg-emerald-600 hover:bg-emerald-700 text-white w-full py-2.5 px-4 rounded-xl text-sm font-bold shadow-md shadow-emerald-600/10 active:scale-[0.98] transition-all duration-200 flex items-center justify-center gap-1.5 cursor-pointer disabled:cursor-not-allowed"
                   >
                     {isUploading ? (
                       <>
@@ -1241,10 +1287,7 @@ export default function Home() {
                         {showReceipt ? (
                           <div
                             className="absolute inset-0 flex items-center justify-center"
-                            style={donor.is_anonymous
-                              ? { background: 'linear-gradient(135deg, #f59e0b, #d97706)' }
-                              : { background: 'linear-gradient(135deg, var(--color-primary), var(--color-primary-dark))' }
-                            }
+                            style={{ background: 'linear-gradient(135deg, #34d399, #059669)' }}
                           >
                             <Eye className="w-4 h-4 text-white" />
                           </div>
@@ -1277,7 +1320,7 @@ export default function Home() {
                     </div>
 
                     <div className="flex items-center gap-3">
-                      <span className="theme-text text-sm font-bold theme-badge px-2.5 py-1 rounded-lg">
+                      <span className="text-emerald-600 text-sm font-bold">
                         {formatCurrency(donor.amount)}
                       </span>
                     </div>
@@ -1303,7 +1346,7 @@ export default function Home() {
                 <Coins className="w-3.5 h-3.5 text-slate-400" />
                 Total
               </span>
-              <span className="theme-text theme-badge font-extrabold px-2.5 py-1 rounded-md">
+              <span className="text-emerald-600 text-base font-extrabold">
                 {formatCurrency(totalRaised)}
               </span>
             </div>
