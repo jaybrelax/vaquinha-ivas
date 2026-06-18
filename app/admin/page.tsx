@@ -17,11 +17,38 @@ import {
   Upload,
   FileCheck,
   X,
-  Info
+  Info,
+  Palette
 } from 'lucide-react';
 import { getSupabase } from '@/lib/supabase';
 import { motion, AnimatePresence } from 'motion/react';
 import Link from 'next/link';
+
+// Paleta de temas pré-definidos
+const THEME_PRESETS = [
+  { name: 'Índigo',    h: 239, s: '84%', l: '48%', preview: '#4f46e5' },
+  { name: 'Violeta',  h: 262, s: '83%', l: '58%', preview: '#8b5cf6' },
+  { name: 'Rosa',     h: 330, s: '81%', l: '54%', preview: '#ec4899' },
+  { name: 'Coral',    h: 14,  s: '86%', l: '54%', preview: '#f4623a' },
+  { name: 'Âmbar',   h: 38,  s: '92%', l: '50%', preview: '#f59e0b' },
+  { name: 'Esmeralda', h: 158, s: '64%', l: '42%', preview: '#10b981' },
+  { name: 'Ciano',   h: 195, s: '92%', l: '38%', preview: '#06b6d4' },
+  { name: 'Azul',    h: 217, s: '91%', l: '54%', preview: '#3b82f6' },
+  { name: 'Slate',   h: 215, s: '25%', l: '40%', preview: '#475569' },
+];
+
+interface ThemeColor { h: number; s: string; l: string; }
+
+const DEFAULT_THEME: ThemeColor = { h: 239, s: '84%', l: '48%' };
+
+// Aplica tema CSS no documento
+const applyTheme = (theme: ThemeColor) => {
+  if (typeof document === 'undefined') return;
+  const root = document.documentElement;
+  root.style.setProperty('--primary-h', String(theme.h));
+  root.style.setProperty('--primary-s', theme.s);
+  root.style.setProperty('--primary-l', theme.l);
+};
 
 export default function Admin() {
   const [title, setTitle] = useState<string>('Vaquinha do Microfone');
@@ -31,6 +58,8 @@ export default function Admin() {
   const [pixKey, setPixKey] = useState<string>('');
   const [pixHolder, setPixHolder] = useState<string>('');
   const [pixBank, setPixBank] = useState<string>('');
+  const [themeColor, setThemeColor] = useState<ThemeColor>(DEFAULT_THEME);
+  const [customHex, setCustomHex] = useState<string>('#4f46e5');
 
   const [isCountdownActive, setIsCountdownActive] = useState<boolean>(false);
   const [countdownDeadline, setCountdownDeadline] = useState<string>('');
@@ -49,6 +78,30 @@ export default function Admin() {
 
   const coverInputRef = useRef<HTMLInputElement>(null);
 
+  // Converte hex #rrggbb para HSL
+  const hexToHsl = (hex: string): ThemeColor => {
+    const r = parseInt(hex.slice(1, 3), 16) / 255;
+    const g = parseInt(hex.slice(3, 5), 16) / 255;
+    const b = parseInt(hex.slice(5, 7), 16) / 255;
+    const max = Math.max(r, g, b), min = Math.min(r, g, b);
+    let h = 0, s = 0;
+    const l = (max + min) / 2;
+    if (max !== min) {
+      const d = max - min;
+      s = l > 0.5 ? d / (2 - max - min) : d / (max + min);
+      switch (max) {
+        case r: h = ((g - b) / d + (g < b ? 6 : 0)) / 6; break;
+        case g: h = ((b - r) / d + 2) / 6; break;
+        case b: h = ((r - g) / d + 4) / 6; break;
+      }
+    }
+    return {
+      h: Math.round(h * 360),
+      s: `${Math.round(s * 100)}%`,
+      l: `${Math.round(l * 100)}%`,
+    };
+  };
+
   const loadLocalConfig = () => {
     const savedTitle = localStorage.getItem('campaign_title');
     const savedDesc = localStorage.getItem('campaign_description');
@@ -59,6 +112,7 @@ export default function Admin() {
     const savedPixBank = localStorage.getItem('campaign_pix_bank');
     const savedCountdownActive = localStorage.getItem('campaign_is_countdown_active');
     const savedCountdownDeadline = localStorage.getItem('campaign_countdown_deadline');
+    const savedTheme = localStorage.getItem('campaign_theme_color');
 
     if (savedTitle) setTitle(savedTitle);
     if (savedDesc) setDescription(savedDesc);
@@ -69,6 +123,13 @@ export default function Admin() {
     if (savedPixBank) setPixBank(savedPixBank);
     if (savedCountdownActive) setIsCountdownActive(savedCountdownActive === 'true');
     if (savedCountdownDeadline) setCountdownDeadline(savedCountdownDeadline);
+    if (savedTheme) {
+      try {
+        const parsed = JSON.parse(savedTheme) as ThemeColor;
+        setThemeColor(parsed);
+        applyTheme(parsed);
+      } catch {}
+    }
   };
 
   const fetchCampaignConfig = async (supabase: any) => {
@@ -102,6 +163,11 @@ export default function Admin() {
             // Convert back to local ISO string slice for input
             setCountdownDeadline(new Date(date.getTime() - date.getTimezoneOffset() * 60000).toISOString().slice(0, 16));
           }
+        }
+        if (data.theme_color_h !== undefined && data.theme_color_s && data.theme_color_l) {
+          const t: ThemeColor = { h: data.theme_color_h, s: data.theme_color_s, l: data.theme_color_l };
+          setThemeColor(t);
+          applyTheme(t);
         }
       }
     } catch (err: any) {
@@ -249,7 +315,10 @@ export default function Admin() {
           pix_holder: pixHolder.trim(),
           pix_bank: pixBank.trim(),
           is_countdown_active: isCountdownActive,
-          countdown_deadline: countdownDeadline ? new Date(countdownDeadline).toISOString() : null
+          countdown_deadline: countdownDeadline ? new Date(countdownDeadline).toISOString() : null,
+          theme_color_h: themeColor.h,
+          theme_color_s: themeColor.s,
+          theme_color_l: themeColor.l,
         };
 
         const { error } = await supabase
@@ -270,6 +339,8 @@ export default function Admin() {
         localStorage.setItem('campaign_pix_bank', pixBank.trim());
         localStorage.setItem('campaign_is_countdown_active', isCountdownActive.toString());
         if (countdownDeadline) localStorage.setItem('campaign_countdown_deadline', countdownDeadline);
+        localStorage.setItem('campaign_theme_color', JSON.stringify(themeColor));
+        applyTheme(themeColor);
 
         setSuccessMsg('Configurações atualizadas na nuvem com sucesso!');
         setCoverFile(null);
@@ -284,6 +355,8 @@ export default function Admin() {
         localStorage.setItem('campaign_pix_bank', pixBank.trim());
         localStorage.setItem('campaign_is_countdown_active', isCountdownActive.toString());
         if (countdownDeadline) localStorage.setItem('campaign_countdown_deadline', countdownDeadline);
+        localStorage.setItem('campaign_theme_color', JSON.stringify(themeColor));
+        applyTheme(themeColor);
 
         setSuccessMsg('Configurações salvas localmente com sucesso!');
         setCoverFile(null);
@@ -447,6 +520,80 @@ export default function Admin() {
                   </div>
                 </div>
 
+                {/* ── THEME COLOR PICKER ─────────────────────────────── */}
+                <div className="bg-slate-50 border border-slate-100 rounded-2xl p-4 space-y-3">
+                  <div className="flex items-center gap-2">
+                    <Palette className="w-4 h-4 theme-text" />
+                    <span className="text-xs font-bold text-slate-800">Cor do Tema da Interface</span>
+                  </div>
+                  <p className="text-[10px] text-slate-400 leading-relaxed">
+                    Escolha a cor de destaque usada em botões, barra de progresso e elementos interativos.
+                  </p>
+
+                  {/* Paleta de presets */}
+                  <div className="flex flex-wrap gap-2">
+                    {THEME_PRESETS.map((preset) => {
+                      const isActive =
+                        themeColor.h === preset.h &&
+                        themeColor.s === preset.s &&
+                        themeColor.l === preset.l;
+                      return (
+                        <button
+                          key={preset.name}
+                          type="button"
+                          title={preset.name}
+                          onClick={() => {
+                            const t: ThemeColor = { h: preset.h, s: preset.s, l: preset.l };
+                            setThemeColor(t);
+                            setCustomHex(preset.preview);
+                            applyTheme(t);
+                          }}
+                          className={`w-8 h-8 rounded-full border-2 transition-all duration-150 shadow-sm hover:scale-110 active:scale-95 ${
+                            isActive
+                              ? 'border-slate-900 ring-2 ring-offset-1 ring-slate-400 scale-110'
+                              : 'border-white'
+                          }`}
+                          style={{ backgroundColor: preset.preview }}
+                        />
+                      );
+                    })}
+
+                    {/* Cor personalizada */}
+                    <label
+                      title="Cor personalizada"
+                      className="relative w-8 h-8 rounded-full border-2 border-dashed border-slate-300 cursor-pointer overflow-hidden hover:scale-110 transition-transform shadow-sm flex items-center justify-center bg-white"
+                    >
+                      <span className="text-[10px] font-black text-slate-400">+</span>
+                      <input
+                        type="color"
+                        value={customHex}
+                        className="absolute inset-0 opacity-0 cursor-pointer w-full h-full"
+                        onChange={(e) => {
+                          const hex = e.target.value;
+                          setCustomHex(hex);
+                          const t = hexToHsl(hex);
+                          setThemeColor(t);
+                          applyTheme(t);
+                        }}
+                      />
+                    </label>
+                  </div>
+
+                  {/* Preview em tempo real */}
+                  <div className="flex items-center gap-3 pt-1">
+                    <div
+                      className="w-5 h-5 rounded-full shadow-inner border border-white/40"
+                      style={{ backgroundColor: `hsl(${themeColor.h}, ${themeColor.s}, ${themeColor.l})` }}
+                    />
+                    <span className="text-[10px] font-mono text-slate-500">
+                      hsl({themeColor.h}, {themeColor.s}, {themeColor.l})
+                    </span>
+                    <span className="ml-auto inline-flex items-center gap-1 theme-badge px-2 py-0.5 rounded-full text-[10px] font-bold">
+                      Preview ativo
+                    </span>
+                  </div>
+                </div>
+
                 {/* COUNTDOWN SETTINGS */}
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 bg-slate-50 border border-slate-100 rounded-2xl p-4">
                   <div className="flex flex-col justify-center">
@@ -583,11 +730,7 @@ export default function Admin() {
                   <button
                     type="submit"
                     disabled={isSaving}
-                    className={`flex-1 text-white py-2.5 px-4 rounded-xl text-sm font-bold shadow-md active:scale-[0.98] transition-all duration-200 flex items-center justify-center gap-1.5 cursor-pointer ${
-                      isSaving
-                        ? 'bg-indigo-400 cursor-not-allowed'
-                        : 'bg-indigo-600 hover:bg-indigo-700 shadow-indigo-600/10'
-                    }`}
+                    className="theme-btn flex-1 py-2.5 px-4 rounded-xl text-sm font-bold shadow-md active:scale-[0.98] transition-all duration-200 flex items-center justify-center gap-1.5 cursor-pointer disabled:cursor-not-allowed"
                   >
                     {isSaving ? (
                       <>

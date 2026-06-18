@@ -37,6 +37,24 @@ import { getSupabase } from '@/lib/supabase';
 import { motion, AnimatePresence } from 'motion/react';
 import Link from 'next/link';
 
+interface ThemeColor { h: number; s: string; l: string; }
+
+const applyTheme = (theme: ThemeColor) => {
+  if (typeof document === 'undefined') return;
+  const root = document.documentElement;
+  root.style.setProperty('--primary-h', String(theme.h));
+  root.style.setProperty('--primary-s', theme.s);
+  root.style.setProperty('--primary-l', theme.l);
+};
+
+const loadSavedTheme = (): ThemeColor | null => {
+  try {
+    const saved = localStorage.getItem('campaign_theme_color');
+    if (saved) return JSON.parse(saved) as ThemeColor;
+  } catch {}
+  return null;
+};
+
 interface Donor {
   id: string;
   name: string;
@@ -177,6 +195,12 @@ export default function Home() {
         setPixBank(configData.pix_bank || '');
         setIsCountdownActive(configData.is_countdown_active || false);
         setCountdownDeadline(configData.countdown_deadline || null);
+        // Aplica tema do Supabase se disponível
+        if (configData.theme_color_h !== undefined && configData.theme_color_s && configData.theme_color_l) {
+          const t: ThemeColor = { h: configData.theme_color_h, s: configData.theme_color_s, l: configData.theme_color_l };
+          localStorage.setItem('campaign_theme_color', JSON.stringify(t));
+          applyTheme(t);
+        }
       } else {
         if (configError && configError.message && (configError.message.includes('campaign_config') || configError.message.includes('schema cache'))) {
           throw configError;
@@ -208,6 +232,10 @@ export default function Home() {
   // Initialize and check Supabase connection
   useEffect(() => {
     setIsClient(true);
+
+    // Aplica o tema salvo imediatamente antes de qualquer outro carregamento
+    const savedTheme = loadSavedTheme();
+    if (savedTheme) applyTheme(savedTheme);
 
     // Check URL for admin
     const urlParams = new URLSearchParams(window.location.search);
@@ -678,12 +706,19 @@ export default function Home() {
                   <p>&nbsp;&nbsp;description text NOT NULL DEFAULT &apos;Ajude-nos a adquirir o novo microfone Hollyland Lark A1 e eleve a qualidade dos áudios.&apos;,</p>
                   <p>&nbsp;&nbsp;goal numeric NOT NULL DEFAULT 500,</p>
                   <p>&nbsp;&nbsp;image_url text NOT NULL DEFAULT &apos;/lark-microphone.jpg&apos;,</p>
+                  <p>&nbsp;&nbsp;theme_color_h integer DEFAULT 239,</p>
+                  <p>&nbsp;&nbsp;theme_color_s text DEFAULT &apos;84%&apos;,</p>
+                  <p>&nbsp;&nbsp;theme_color_l text DEFAULT &apos;48%&apos;,</p>
                   <p>&nbsp;&nbsp;CONSTRAINT check_single_row CHECK (id = 1)</p>
                   <p>);</p>
                   <p className="text-yellow-400 font-bold mt-2 block">-- 3. Registro padrão inicial</p>
                   <p>INSERT INTO campaign_config (id, title, description, goal, image_url)</p>
                   <p>VALUES (1, &apos;Vaquinha do Microfone&apos;, &apos;Ajude-nos a adquirir o novo microfone Hollyland Lark A1 e eleve a qualidade dos áudios.&apos;, 500, &apos;/lark-microphone.jpg&apos;)</p>
                   <p>ON CONFLICT (id) DO NOTHING;</p>
+                  <p className="text-yellow-400 font-bold mt-2 block">-- 4. Migração (se a tabela já existe, adicione as colunas):</p>
+                  <p>ALTER TABLE campaign_config ADD COLUMN IF NOT EXISTS theme_color_h integer DEFAULT 239;</p>
+                  <p>ALTER TABLE campaign_config ADD COLUMN IF NOT EXISTS theme_color_s text DEFAULT &apos;84%&apos;;</p>
+                  <p>ALTER TABLE campaign_config ADD COLUMN IF NOT EXISTS theme_color_l text DEFAULT &apos;48%&apos;;</p>
                 </div>
 
                 <div className="flex items-center justify-between pt-1 flex-wrap gap-2 text-[10px] text-rose-700">
@@ -762,8 +797,8 @@ export default function Home() {
               className="absolute inset-0 w-full h-full object-cover select-none transition-transform duration-700 group-hover:scale-105"
             />
             <div className="absolute top-3 right-3 z-20">
-              <span className="inline-flex items-center gap-1.5 px-3 py-1 bg-indigo-600 shadow-lg backdrop-blur-md rounded-full text-xs font-medium text-white border border-indigo-400/30">
-                <Mic className="w-3 h-3 text-indigo-400" />
+              <span className="theme-btn inline-flex items-center gap-1.5 px-3 py-1 shadow-lg backdrop-blur-md rounded-full text-xs font-medium border border-white/20">
+                <Mic className="w-3 h-3 text-white/70" />
                 Campanha Ativa
               </span>
             </div>
@@ -780,7 +815,7 @@ export default function Home() {
               <div className="flex justify-between items-end mb-2">
                 <div className="flex flex-col">
                   <span className="text-[10px] uppercase tracking-wider font-bold text-slate-400">Total Arrecadado</span>
-                  <p className="text-2xl font-black text-indigo-600">
+                  <p className="text-2xl font-black theme-text">
                     {formatCurrency(totalRaised)}
                   </p>
                 </div>
@@ -795,7 +830,7 @@ export default function Home() {
               {/* Progress visual fill bar */}
               <div className="w-full bg-slate-150 h-3 rounded-full overflow-hidden relative border border-slate-200/40 bg-slate-100">
                 <div
-                  className="bg-indigo-500 h-full rounded-full transition-all duration-500 ease-out relative"
+                  className="theme-progress h-full rounded-full transition-all duration-500 ease-out relative"
                   style={{ width: `${progressPercent}%` }}
                 >
                   <div className="absolute top-0 right-0 bottom-0 w-1.5 bg-white/20 animate-pulse" />
@@ -808,7 +843,7 @@ export default function Home() {
                 </span>
 
                 {remaining > 0 ? (
-                  <span className="text-indigo-600 bg-indigo-50/60 px-2 py-0.5 rounded-md font-medium border border-indigo-100/50">
+                  <span className="theme-badge px-2 py-0.5 rounded-md font-medium">
                     Faltam {formatCurrency(remaining)}
                   </span>
                 ) : (
@@ -828,28 +863,28 @@ export default function Home() {
                   </div>
                   <div className="flex items-center gap-3 md:gap-4">
                     <div className="flex flex-col items-center min-w-[3rem]">
-                      <span className="text-2xl font-black text-indigo-600 tabular-nums leading-none">
+                      <span className="text-2xl font-black theme-text tabular-nums leading-none">
                         {timeLeft.d.toString().padStart(2, '0')}
                       </span>
                       <span className="text-[10px] font-semibold text-slate-400 mt-1">Dias</span>
                     </div>
                     <span className="text-xl font-black text-slate-200 mb-4">:</span>
                     <div className="flex flex-col items-center min-w-[3rem]">
-                      <span className="text-2xl font-black text-indigo-600 tabular-nums leading-none">
+                      <span className="text-2xl font-black theme-text tabular-nums leading-none">
                         {timeLeft.h.toString().padStart(2, '0')}
                       </span>
                       <span className="text-[10px] font-semibold text-slate-400 mt-1">Horas</span>
                     </div>
                     <span className="text-xl font-black text-slate-200 mb-4">:</span>
                     <div className="flex flex-col items-center min-w-[3rem]">
-                      <span className="text-2xl font-black text-indigo-600 tabular-nums leading-none">
+                      <span className="text-2xl font-black theme-text tabular-nums leading-none">
                         {timeLeft.m.toString().padStart(2, '0')}
                       </span>
                       <span className="text-[10px] font-semibold text-slate-400 mt-1">Min</span>
                     </div>
                     <span className="text-xl font-black text-slate-200 mb-4">:</span>
                     <div className="flex flex-col items-center min-w-[3rem]">
-                      <span className="text-2xl font-black text-indigo-600 tabular-nums leading-none">
+                      <span className="text-2xl font-black theme-text tabular-nums leading-none">
                         {timeLeft.s.toString().padStart(2, '0')}
                       </span>
                       <span className="text-[10px] font-semibold text-slate-400 mt-1">Seg</span>
@@ -894,7 +929,7 @@ export default function Home() {
             onClick={() => setIsFormOpen(!isFormOpen)}
             className={`w-full py-4 px-4 rounded-2xl text-base font-bold shadow-sm transition-all duration-300 flex items-center justify-center gap-2 cursor-pointer ${isFormOpen
                 ? 'bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-250/30'
-                : 'bg-indigo-600 hover:bg-indigo-700 text-white shadow-md shadow-indigo-600/10 active:scale-[0.99]'
+                : 'theme-btn shadow-md active:scale-[0.99]'
               }`}
           >
             {isFormOpen ? (
@@ -1011,7 +1046,7 @@ export default function Home() {
                           type="button"
                           onClick={() => handleQuickDonate(val)}
                           className={`py-1.5 rounded-xl border text-xs font-bold transition-all duration-200 ${amountStr === val.toString()
-                              ? 'bg-indigo-600 text-white border-indigo-600 shadow-sm'
+                              ? 'theme-btn border-transparent shadow-sm'
                               : 'bg-slate-50/50 hover:bg-slate-100 text-slate-600 border-slate-200 cursor-pointer'
                             }`}
                         >
@@ -1111,10 +1146,7 @@ export default function Home() {
                   <button
                     type="submit"
                     disabled={isUploading}
-                    className={`w-full text-white py-2.5 px-4 rounded-xl text-sm font-bold shadow-md active:scale-[0.98] transition-all duration-200 flex items-center justify-center gap-1.5 cursor-pointer ${isUploading
-                        ? 'bg-indigo-400 cursor-not-allowed'
-                        : 'bg-indigo-600 hover:bg-indigo-700 shadow-indigo-600/10'
-                      }`}
+                    className="theme-btn w-full py-2.5 px-4 rounded-xl text-sm font-bold shadow-md active:scale-[0.98] transition-all duration-200 flex items-center justify-center gap-1.5 cursor-pointer disabled:cursor-not-allowed"
                   >
                     {isUploading ? (
                       <>
@@ -1201,13 +1233,19 @@ export default function Home() {
                   <div
                     key={donor.id}
                     onClick={() => { if (canClick) { setActiveReceiptUrl(donor.receipt_url || 'upload'); setActiveReceiptDonorId(donor.id); } }}
-                    className={`p-4 flex items-center justify-between transition-colors group ${canClick ? 'cursor-pointer hover:bg-indigo-50/40' : 'hover:bg-slate-50/40'}`}
+                    className={`p-4 flex items-center justify-between transition-colors group ${canClick ? 'cursor-pointer hover:bg-[color-mix(in_srgb,var(--color-primary)_5%,transparent)]' : 'hover:bg-slate-50/40'}`}
                   >
                     <div className="flex items-center gap-3">
                       {/* Avatar: thumbnail if has receipt, else initials */}
                       <div className={`w-10 h-10 rounded-full border-2 overflow-hidden flex items-center justify-center text-xs font-bold leading-none shrink-0 relative ${showReceipt ? 'border-transparent' : donor.is_anonymous ? 'border-amber-300' : getAvatarStyle(idx)}`}>
                         {showReceipt ? (
-                          <div className={`absolute inset-0 bg-gradient-to-br flex items-center justify-center ${donor.is_anonymous ? 'from-amber-400 to-amber-500' : 'from-indigo-500 to-indigo-700'}`}>
+                          <div
+                            className="absolute inset-0 flex items-center justify-center"
+                            style={donor.is_anonymous
+                              ? { background: 'linear-gradient(135deg, #f59e0b, #d97706)' }
+                              : { background: 'linear-gradient(135deg, var(--color-primary), var(--color-primary-dark))' }
+                            }
+                          >
                             <Eye className="w-4 h-4 text-white" />
                           </div>
                         ) : donor.is_anonymous ? (
@@ -1239,7 +1277,7 @@ export default function Home() {
                     </div>
 
                     <div className="flex items-center gap-3">
-                      <span className="text-sm font-bold text-indigo-600 bg-indigo-55/60 px-2.5 py-1 rounded-lg border border-indigo-100/30">
+                      <span className="theme-text text-sm font-bold theme-badge px-2.5 py-1 rounded-lg">
                         {formatCurrency(donor.amount)}
                       </span>
                     </div>
@@ -1265,7 +1303,7 @@ export default function Home() {
                 <Coins className="w-3.5 h-3.5 text-slate-400" />
                 Total
               </span>
-              <span className="font-extrabold text-indigo-600 bg-indigo-50/60 px-2.5 py-1 rounded-md">
+              <span className="theme-text theme-badge font-extrabold px-2.5 py-1 rounded-md">
                 {formatCurrency(totalRaised)}
               </span>
             </div>
@@ -1416,7 +1454,7 @@ export default function Home() {
                     href={activeReceiptUrl}
                     target="_blank"
                     rel="noreferrer"
-                    className="mt-2 text-xs font-bold text-white bg-indigo-600 hover:bg-indigo-700 px-4 py-2 rounded-xl flex items-center gap-1"
+                    className="mt-2 text-xs font-bold text-white theme-btn px-4 py-2 rounded-xl flex items-center gap-1"
                   >
                     Abrir arquivo PDF
                   </a>
@@ -1465,7 +1503,7 @@ export default function Home() {
         <button
           type="button"
           onClick={() => setIsFormOpen(true)}
-          className="fixed bottom-6 right-5 z-40 rounded-full bg-indigo-600 text-white shadow-2xl shadow-indigo-600/40 flex items-center justify-center hover:bg-indigo-700 active:scale-95 transition-all duration-200"
+          className="fixed bottom-6 right-5 z-40 rounded-full theme-btn shadow-2xl flex items-center justify-center active:scale-95 transition-all duration-200"
           style={{ width: '4rem', height: '4rem' }}
           aria-label="Registrar nova doação"
         >

@@ -1,17 +1,58 @@
 @import "tailwindcss";
 
+/* ── Tema de Cores Dinâmico ───────────────────────────────────── */
+:root {
+  --primary-h: 239;
+  --primary-s: 84%;
+  --primary-l: 48%;
+
+  /* Tokens derivados automaticamente */
+  --color-primary:        hsl(var(--primary-h), var(--primary-s), var(--primary-l));
+  --color-primary-light:  hsl(var(--primary-h), var(--primary-s), 95%);
+  --color-primary-dark:   hsl(var(--primary-h), var(--primary-s), 38%);
+  --color-primary-ring:   hsl(var(--primary-h), var(--primary-s), var(--primary-l), 0.25);
+  --color-primary-badge:  hsl(var(--primary-h), var(--primary-s), var(--primary-l), 0.12);
+}
+
+/* ── Classes utilitárias de tema ───────────────────────────────── */
+.theme-bg          { background-color: var(--color-primary) !important; }
+.theme-bg-light    { background-color: var(--color-primary-light) !important; }
+.theme-text        { color: var(--color-primary) !important; }
+.theme-border      { border-color: var(--color-primary) !important; }
+.theme-ring:focus  { outline: none; box-shadow: 0 0 0 3px var(--color-primary-ring) !important; }
+
+/* Botão primário temático */
+.theme-btn {
+  background-color: var(--color-primary) !important;
+  color: white !important;
+  transition: filter 0.15s ease;
+}
+.theme-btn:hover { filter: brightness(0.88) !important; }
+.theme-btn:disabled { filter: brightness(1.2) saturate(0.5) !important; }
+
+/* Badge/tag temático */
+.theme-badge {
+  background-color: var(--color-primary-badge);
+  color: var(--color-primary);
+  border: 1px solid hsl(var(--primary-h), var(--primary-s), 85%);
+}
+
+/* Progress bar temática */
+.theme-progress { background-color: var(--color-primary) !important; }
+
+/* Countdown glow temático */
 @keyframes countdown-pulse {
   0%, 100% {
     box-shadow:
-      0 0 8px rgba(99, 102, 241, 0.10),
-      0 0 24px rgba(99, 102, 241, 0.04);
-    border-color: rgba(99, 102, 241, 0.18);
+      0 0 8px hsl(var(--primary-h), var(--primary-s), var(--primary-l), 0.10),
+      0 0 24px hsl(var(--primary-h), var(--primary-s), var(--primary-l), 0.04);
+    border-color: hsl(var(--primary-h), var(--primary-s), var(--primary-l), 0.18);
   }
   50% {
     box-shadow:
-      0 0 18px rgba(99, 102, 241, 0.22),
-      0 0 48px rgba(99, 102, 241, 0.08);
-    border-color: rgba(99, 102, 241, 0.35);
+      0 0 18px hsl(var(--primary-h), var(--primary-s), var(--primary-l), 0.22),
+      0 0 48px hsl(var(--primary-h), var(--primary-s), var(--primary-l), 0.08);
+    border-color: hsl(var(--primary-h), var(--primary-s), var(--primary-l), 0.35);
   }
 }
 
